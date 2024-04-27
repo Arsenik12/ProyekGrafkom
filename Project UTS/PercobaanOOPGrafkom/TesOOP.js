@@ -9,52 +9,7 @@ var keysPressed = {
     d: false
 };
 
-// import { Ellipsoid } from './BentukObject.js';
-function Ellipsoid(x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ) {
-    var vertices = [];
-    var colors = [];
-    var angleIncrement = (2 * Math.PI) / segments;
-    var rainbowColors = [
-        [16 / 200, 200 / 210, 150 / 250]
-    ];
-
-    for (var i = 0; i <= segments; i++) {
-        var latAngle = Math.PI * (-0.5 + (i / segments));
-        var sinLat = Math.sin(latAngle);
-        var cosLat = Math.cos(latAngle);
-
-        for (var j = 0; j <= segments; j++) {
-            var lonAngle = 2 * Math.PI * (j / segments);
-            var sinLon = Math.sin(lonAngle);
-            var cosLon = Math.cos(lonAngle);
-
-            var xCoord = cosLon * cosLat * ovalScaleX;
-            var yCoord = sinLon * cosLat * ovalScaleY;
-            var zCoord = sinLat * ovalScaleZ;
-
-            var vertexX = x + radius * xCoord;
-            var vertexY = y + radius * yCoord;
-            var vertexZ = z + radius * zCoord;
-
-            vertices.push(vertexX, vertexY, vertexZ);
-
-            var colorIndex = j % rainbowColors.length;
-            colors = colors.concat(rainbowColors[colorIndex]);
-        }
-    }
-
-    var faces = [];
-    for (var i = 0; i < segments; i++) {
-        for (var j = 0; j < segments; j++) {
-            var index = i * (segments + 1) + j;
-            var nextIndex = index + segments + 1;
-
-            faces.push(index, nextIndex, index + 1);
-            faces.push(nextIndex, nextIndex + 1, index + 1);
-        }
-    }
-    return { vertices: vertices, colors: colors, faces: faces };
-}
+// quadric.Ellipsoid();
 
 function updateViewMatrix() {
     var sensitivity = 0.001; // Adjust sensitivity here
@@ -155,19 +110,22 @@ function main() {
     GL.useProgram(SHADER_PROGRAM);
 
     //bind buffer
-    var generateHead = new Ellipsoid(0, 0, 0, 1.2, 50, 1.5, 1, 1);
-    var head = generateHead; // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var generateHead = quadric.Ellipsoid(0, 0, 0, 1.2, 50, 1.5, 1, 1);
+    // var head = generateHead; // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
     var TUBE_VERTEXHEAD = GL.createBuffer();
     GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXHEAD);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(head.vertices), GL.STATIC_DRAW);
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(generateHead.vertices), GL.STATIC_DRAW);
 
     var TUBE_COLORSHEAD = GL.createBuffer();
     GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSHEAD);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(head.colors), GL.STATIC_DRAW);
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(generateHead.colors), GL.STATIC_DRAW);
 
     var TUBE_FACESHEAD = GL.createBuffer();
     GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESHEAD);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(head.faces), GL.STATIC_DRAW);
+    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(generateHead.faces), GL.STATIC_DRAW);
+
+
+    
    
     //matrix
     var PROJECTION_MATRIX = LIBS.get_projection(40, CANVAS.width / CANVAS.height, 1, 100);
@@ -296,7 +254,7 @@ function main() {
         GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
         GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
 
-        GL.drawElements(GL.TRIANGLES, head.faces.length, GL.UNSIGNED_SHORT, 0);
+        GL.drawElements(GL.TRIANGLES, generateHead.faces.length, GL.UNSIGNED_SHORT, 0);
         GL.flush();
 
         window.requestAnimationFrame(animate);
