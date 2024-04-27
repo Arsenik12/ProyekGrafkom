@@ -648,12 +648,64 @@ function main() {
     GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(kakikiri2.faces), GL.STATIC_DRAW);
     //==========================================================================================
 
+    //telapaktangan
+    var telapakkanan = quadric.EllipticParaboloid(1.7, 0, -7, 5, 50, 0.05, 0.05, 0.1, 0, 0, 0,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var TUBE_VERTEXTELAPAKKANAN = GL.createBuffer();
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKANAN);
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkanan.vertices), GL.STATIC_DRAW);
 
+    var TUBE_COLORSTELAPAKKANAN = GL.createBuffer();
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKANAN);
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkanan.colors), GL.STATIC_DRAW);
 
+    var TUBE_FACESTELAPAKKANAN = GL.createBuffer();
+    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKANAN);
+    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(telapakkanan.faces), GL.STATIC_DRAW);
+    
+    var telapakkiri = quadric.EllipticParaboloid(-1.7, 0, -7, 5, 50, 0.05, 0.05, 0.1, 0, 0, 0,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var TUBE_VERTEXTELAPAKKIRI = GL.createBuffer();
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKIRI);
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkiri.vertices), GL.STATIC_DRAW);
 
+    var TUBE_COLORSTELAPAKKIRI = GL.createBuffer();
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKIRI);
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkiri.colors), GL.STATIC_DRAW);
 
+    var TUBE_FACESTELAPAKKIRI = GL.createBuffer();
+    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKIRI);
+    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(telapakkiri.faces), GL.STATIC_DRAW);
+    
+ //==========================================================================================
+    //telapak sikil
 
+    var telapakkakikanan = quadric.Ellipsoid(1.2, -0.4, -8.8, 2, 50, 0.3, 0.5, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var TUBE_VERTEXTELAPAKKAKIKANAN = GL.createBuffer();
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKAKIKANAN);
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkakikanan.vertices), GL.STATIC_DRAW);
 
+    var TUBE_COLORSTELAPAKKAKIKANAN = GL.createBuffer();
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKAKIKANAN);
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkakikanan.colors), GL.STATIC_DRAW);
+
+    var TUBE_FACESTELAPAKKAKIKANAN = GL.createBuffer();
+    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKAKIKANAN);
+    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(telapakkakikanan.faces), GL.STATIC_DRAW);
+    
+
+    var telapakkakikiri = quadric.Ellipsoid(-1.2, -0.4, -8.8, 2, 50, 0.3, 0.5, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var TUBE_VERTEXTELAPAKKAKIKIRI = GL.createBuffer();
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKAKIKIRI);
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkakikiri.vertices), GL.STATIC_DRAW);
+
+    var TUBE_COLORSTELAPAKKAKIKIRI = GL.createBuffer();
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKAKIKIRI);
+    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkakikiri.colors), GL.STATIC_DRAW);
+
+    var TUBE_FACESTELAPAKKAKIKIRI = GL.createBuffer();
+    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKAKIKIRI);
+    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(telapakkakikiri.faces), GL.STATIC_DRAW);
+    
+    //==========================================================================================
     
 
     //matrix
@@ -1343,11 +1395,64 @@ function main() {
     
     //==============================================================================================
 
+    //TELAPAK
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKANAN);
+    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
 
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKANAN);
+    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
 
+    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKANAN);
 
+    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
+    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
+    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
 
+    GL.drawElements(GL.TRIANGLES, telapakkanan.faces.length, GL.UNSIGNED_SHORT, 0);
 
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKIRI);
+    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
+
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKIRI);
+    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
+
+    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKIRI);
+
+    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
+    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
+    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
+
+    GL.drawElements(GL.TRIANGLES, telapakkiri.faces.length, GL.UNSIGNED_SHORT, 0);
+    //==============================================================================================
+
+    //telapak sikil
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKAKIKANAN);
+    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
+
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKAKIKANAN);
+    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
+
+    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKAKIKANAN);
+
+    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
+    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
+    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
+
+    GL.drawElements(GL.TRIANGLES, telapakkakikanan.faces.length, GL.UNSIGNED_SHORT, 0);
+
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKAKIKIRI);
+    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
+
+    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKAKIKIRI);
+    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
+
+    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKAKIKIRI);
+
+    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
+    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
+    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
+
+    GL.drawElements(GL.TRIANGLES, telapakkakikiri.faces.length, GL.UNSIGNED_SHORT, 0);
 
 
 
