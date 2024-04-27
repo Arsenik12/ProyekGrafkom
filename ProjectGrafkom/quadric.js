@@ -1,13 +1,8 @@
 window.quadric = {
-    Ellipsoid: function(x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ) {
+    Ellipsoid: function(x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ, rainbowColors) {
         var vertices = [];
         var colors = [];
         var angleIncrement = (2 * Math.PI) / segments;
-        var rainbowColors = [
-            [16 / 200, 200 / 210, 150 / 250]
-            // [1.0, 0.0, 0.0],
-            // [0.0, 0.0, 1.0]
-        ];
     
         for (var i = 0; i <= segments; i++) {
             var latAngle = Math.PI * (-0.5 + (i / segments));
@@ -47,16 +42,53 @@ window.quadric = {
         return { vertices: vertices, colors: colors, faces: faces };
     },
 
-    EllipticCone: function(x, y, z, radius, segments, coneScaleX, coneScaleY, coneScaleZ, rotationX, rotationY, rotationZ){
+    SetengahEllipsoid: function(x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ, rainbowColors) {
         var vertices = [];
         var colors = [];
-    
         var angleIncrement = (2 * Math.PI) / segments;
     
-        var rainbowColors = [
-            [1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0]
-        ];
+        for (var i = 0; i <= segments; i++) {
+            var latAngle = Math.PI * (-0.5 + (i / segments));
+            var sinLat = Math.sin(latAngle);
+            var cosLat = Math.cos(latAngle);
+    
+            for (var j = 0; j <= segments; j++) {
+                var lonAngle = 2 * Math.PI * (j / segments);
+                var sinLon = Math.sin(lonAngle);
+                var cosLon = Math.cos(lonAngle);
+    
+                var xCoord = cosLon * cosLat * ovalScaleX;
+                var yCoord = sinLon * cosLat * ovalScaleY;
+                var zCoord = sinLat * ovalScaleZ;
+    
+                var vertexX = x + radius * xCoord;
+                var vertexY = y + radius * yCoord;
+                var vertexZ = z + radius * zCoord;
+    
+                vertices.push(vertexX, vertexY, vertexZ);
+    
+                var colorIndex = j % rainbowColors.length;
+                colors = colors.concat(rainbowColors[colorIndex]);
+            }
+        }
+        
+        var faces = [];
+        for (var i = 0; i < segments; i++) {
+            for (var j = 0; j < segments/2; j++) {
+                var index = i * (segments + 1) + j;
+                var nextIndex = index + segments + 1;
+    
+                faces.push(index, nextIndex, index + 1);
+                faces.push(nextIndex, nextIndex + 1, index + 1);
+            }
+        }
+        return { vertices: vertices, colors: colors, faces: faces };
+    },
+
+    EllipticCone: function(x, y, z, radius, segments, coneScaleX, coneScaleY, coneScaleZ, rotationX, rotationY, rotationZ, rainbowColors){
+        var vertices = [];
+        var colors = [];
+        var angleIncrement = (2 * Math.PI) / segments;
     
         for (var i = 0; i <= segments; i++) {
             var latAngle = (i/segments);
@@ -104,15 +136,9 @@ window.quadric = {
         return { vertices: vertices, colors: colors, faces: faces };
     },
 
-    Taabung: function(x, y, z, radius, height, segments, tabScaleX, tabScaleY, tabScaleZ, rotationX, rotationY, rotationZ){
+    Tabung: function(x, y, z, radius, height, segments, tabScaleX, tabScaleY, tabScaleZ, rotationX, rotationY, rotationZ,rainbowColors){
         var vertices = [];
         var colors = [];
-    
-        var rainbowColors = [
-            [16 / 200, 200 / 210, 150 / 250]
-            // [1.0, 0.0, 0.0],
-            // [0.0, 0.0, 1.0]
-        ];
     
         for (var i = 0; i <= segments; i++) {
             var angle = 2 * Math.PI * (i / segments);
@@ -158,16 +184,12 @@ window.quadric = {
         return { vertices: vertices, colors: colors, faces: faces };
     },
 
-    EllipticParaboloid: function(x, y, z, radius, segments, coneScaleX, coneScaleY, coneScaleZ, rotationX, rotationY, rotationZ){
+    EllipticParaboloid: function(x, y, z, radius, segments, coneScaleX, coneScaleY, coneScaleZ, rotationX, rotationY ,rainbowColors){
         var vertices = [];
         var colors = [];
     
         var angleIncrement = (2 * Math.PI) / segments;
-    
-        var rainbowColors = [
-            [1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0]
-        ];
+
     
         for (var i = 0; i <= segments; i++) {
             var latAngle = Math.PI * (-0.5 + (i / segments));
@@ -214,6 +236,7 @@ window.quadric = {
         }
         return { vertices: vertices, colors: colors, faces: faces };
     }
+
 };
 
 
