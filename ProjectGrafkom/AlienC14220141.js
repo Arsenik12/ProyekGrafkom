@@ -462,10 +462,10 @@ function main() {
     badan.child.push(pbadan);
     badan.child.push(pbadan1);
 
-    badan.child.push(sendikanan);
-    badan.child.push(sendikiri);
-    badan.child.push(sendikananbawah);
-    badan.child.push(sendikiribawah);
+    // badan.child.push(sendikanan);
+    // badan.child.push(sendikiri);
+    // badan.child.push(sendikananbawah);
+    // badan.child.push(sendikiribawah);
 
 
     sendikanan.child.push(sendikanan2);
@@ -499,9 +499,7 @@ function main() {
     //matrix
     var PROJECTION_MATRIX = LIBS.get_projection(40, CANVAS.width / CANVAS.height, 1, 100);
     var VIEW_MATRIX = LIBS.get_I4();
-    var MODEL_MATRIX2 = LIBS.get_I4();
-    var MODEL_MATRIX3 = LIBS.get_I4();
-    var MODEL_MATRIX4 = LIBS.get_I4();
+
 
     // Event listener untuk mouse movement
     document.addEventListener('mousemove', function (event) {
@@ -619,27 +617,83 @@ function main() {
         }
         if (keysPressed.d) {
             LIBS.translateX(VIEW_MATRIX, cameraSpeed);
+        }        //posisi awal
+        if (walkFront == true) {
+            depressoPos[2] += depressoMovementSpeed;
+            if (depressoPos[2] >= 10) {
+                walkFront = false;
+            }
+        }
+        else {
+            depressoPos[2] -= depressoMovementSpeed;
+            if (depressoPos[2] <= -10) {
+                walkFront = true;
+            }
         }
 
-    //draw
-    var MODEL_MATRIX = LIBS.get_I4();
-    head.MODEL_MATRIX = MODEL_MATRIX;
-    head.render(head.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        var MODEL_MATRIX = LIBS.get_I4();
+        LIBS.translateZ(MODEL_MATRIX, depressoPos[2]);
+        if (!walkFront) {
+            LIBS.rotateY(MODEL_MATRIX, Math.PI);
+        }
 
-    badan.MODEL_MATRIX = MODEL_MATRIX;
-    badan.render(badan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        // Logic for walking animation
+        walkAngle += walkSpeed;
+        if (walkAngle > maxWalkAngle) {
+            walkSpeed = -walkSpeed; // Reverse direction if reaching the maximum angle
+        } else if (walkAngle < -maxWalkAngle) {
+            walkSpeed = -walkSpeed; // Reverse direction if reaching the minimum angle
+        }
 
-    sendikanan.MODEL_MATRIX = MODEL_MATRIX;
-    sendikanan.render(sendikanan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        // Rotate kaki1 and kaki2 alternately
+        var kaki1Angle = walkAngle;
+        var kaki2Angle = -walkAngle;
 
-    sendikiri.MODEL_MATRIX = MODEL_MATRIX;
-    sendikiri.render(sendikiri.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        var animasiKakiKanan = LIBS.get_I4();
+        LIBS.rotateX(animasiKakiKanan, kaki1Angle);
+        LIBS.translateZ(animasiKakiKanan, depressoPos[2]);
+        if (!walkFront) {
+            LIBS.rotateY(animasiKakiKanan, Math.PI);
+        }
+        sendikananbawah.MODEL_MATRIX = animasiKakiKanan;
+        sendikananbawah.render(sendikananbawah.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
-    sendikananbawah.MODEL_MATRIX = MODEL_MATRIX;
-    sendikananbawah.render(sendikananbawah.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
-    sendikiribawah.MODEL_MATRIX = MODEL_MATRIX;
-    sendikiribawah.render(sendikiribawah.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        var animasiKakiKiri = LIBS.get_I4();
+        LIBS.rotateX(animasiKakiKiri, kaki2Angle);
+        LIBS.translateZ(animasiKakiKiri, depressoPos[2]);
+        if (!walkFront) {
+            LIBS.rotateY(animasiKakiKiri, Math.PI);
+        }
+        sendikiribawah.MODEL_MATRIX = animasiKakiKiri;
+        sendikiribawah.render(sendikiribawah.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+        var animasiTanganKanan = LIBS.get_I4();
+        LIBS.rotateX(animasiTanganKanan, kaki2Angle);
+        LIBS.translateZ(animasiTanganKanan, depressoPos[2]);
+        if (!walkFront) {
+            LIBS.rotateY(animasiTanganKanan, Math.PI);
+        }
+        sendikanan.MODEL_MATRIX = animasiTanganKanan;
+        sendikanan.render(sendikanan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+        var animasiTanganKiri = LIBS.get_I4();
+        LIBS.rotateX(animasiTanganKiri, kaki1Angle);
+        LIBS.translateZ(animasiTanganKiri, depressoPos[2]);
+        if (!walkFront) {
+            LIBS.rotateY(animasiTanganKiri, Math.PI);
+        }
+        sendikiri.MODEL_MATRIX = animasiTanganKiri;
+        sendikiri.render(sendikiri.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+        //seluruh
+        badan.MODEL_MATRIX = MODEL_MATRIX;
+        badan.render(badan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+    
+
+
+
+
 
 
 
