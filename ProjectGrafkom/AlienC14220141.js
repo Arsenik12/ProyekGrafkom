@@ -9,6 +9,112 @@ var keysPressed = {
     d: false
 };
 
+var GL;
+class MyObj {
+    canvas = null;
+    vertex = [];
+    faces = [];
+    colors = [];
+
+    SHADER_PROGRAM = null;
+    _color = null;
+    _position = null;
+
+    _MMatrix = LIBS.get_I4();
+    _PMatrix = LIBS.get_I4();
+    _VMatrix = LIBS.get_I4();
+    _greyScality = 0;
+
+    TRIANGLE_VERTEX = null;
+    TRIANGLE_FACES = null;
+    TRIANGLE_COLORS = null;
+
+    MODEL_MATRIX = LIBS.get_I4();
+    child = [];
+
+    constructor(vertex, faces, source_shader_vertex, source_shader_fragment, colors) {
+        this.vertex = vertex;
+        this.faces = faces;
+        this.colors = colors;
+
+        var compile_shader = function (source, type, typeString) {
+            var shader = GL.createShader(type);
+            GL.shaderSource(shader, source);
+            GL.compileShader(shader);
+            if (!GL.getShaderParameter(shader, GL.COMPILE_STATUS)) {
+                alert("ERROR IN " + typeString + " SHADER: " + GL.getShaderInfoLog(shader));
+                return false;
+            }
+            return shader;
+        };
+
+        var shader_vertex = compile_shader(source_shader_vertex, GL.VERTEX_SHADER, "VERTEX");
+        var shader_fragment = compile_shader(source_shader_fragment, GL.FRAGMENT_SHADER, "FRAGMENT");
+
+        this.SHADER_PROGRAM = GL.createProgram();
+        GL.attachShader(this.SHADER_PROGRAM, shader_vertex);
+        GL.attachShader(this.SHADER_PROGRAM, shader_fragment);
+
+        GL.linkProgram(this.SHADER_PROGRAM);
+
+        // Get attribute and uniform locations
+        this._color = GL.getAttribLocation(this.SHADER_PROGRAM, "color");
+        this._position = GL.getAttribLocation(this.SHADER_PROGRAM, "position");
+        this._PMatrix = GL.getUniformLocation(this.SHADER_PROGRAM, "PMatrix"); //projection
+        this._VMatrix = GL.getUniformLocation(this.SHADER_PROGRAM, "VMatrix"); //View
+        this._MMatrix = GL.getUniformLocation(this.SHADER_PROGRAM, "MMatrix"); //Model
+        this._greyScality = GL.getUniformLocation(this.SHADER_PROGRAM, "greyScality");//GreyScality
+
+        // Enable attribute arrays
+        GL.enableVertexAttribArray(this._color);
+        GL.enableVertexAttribArray(this._position);
+        GL.useProgram(this.SHADER_PROGRAM);
+
+        // Create buffers
+        this.TRIANGLE_VERTEX = GL.createBuffer();
+        this.TRIANGLE_FACES = GL.createBuffer();
+        this.TRIANGLE_COLORS = GL.createBuffer(); // Create color buffer
+    }
+
+    setup() {
+        GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_VERTEX);
+        GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(this.vertex), GL.STATIC_DRAW);
+
+        GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_COLORS); // Use the color buffer
+        GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(this.colors), GL.STATIC_DRAW); // Update with rainbow colors
+
+        GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, this.TRIANGLE_FACES);
+        GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.faces), GL.STATIC_DRAW);
+        this.child.forEach(obj => {
+
+            obj.setup();
+        });
+    }
+    
+    render(model_matrix, VIEW_MATRIX, PROJECTION_MATRIX) {
+        GL.useProgram(this.SHADER_PROGRAM);
+        GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_VERTEX);
+        GL.vertexAttribPointer(this._position, 3, GL.FLOAT, false, 0, 0); // Use the position buffer
+
+        GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_COLORS); // Bind the color buffer
+        GL.vertexAttribPointer(this._color, 3, GL.FLOAT, false, 0, 0); // Use the color buffer
+
+        GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, this.TRIANGLE_FACES);
+
+        GL.uniformMatrix4fv(this._PMatrix, false, PROJECTION_MATRIX);
+        GL.uniformMatrix4fv(this._VMatrix, false, VIEW_MATRIX);
+        GL.uniformMatrix4fv(this._MMatrix, false, model_matrix); // Use the provided model_matrix
+        GL.uniform1f(this._greyScality, 1);
+
+        GL.drawElements(GL.TRIANGLES, this.faces.length, GL.UNSIGNED_SHORT, 0);
+
+        GL.flush();
+        this.child.forEach(obj => {
+            obj.render(model_matrix, VIEW_MATRIX, PROJECTION_MATRIX); // Pass model_matrix to child objects
+        });
+    }
+}
+
 function updateViewMatrix() {
     var sensitivity = 0.001; // Adjust sensitivity here
     var dx = mouseX - prevMouseX;
@@ -28,7 +134,6 @@ function main() {
     CANVAS.width = window.innerWidth;
     CANVAS.height = window.innerHeight;
 
-    var GL;
     try {
         GL = CANVAS.getContext("webgl", { antialias: true });
         var EXT = GL.getExtension("OES_element_index_uint");
@@ -59,43 +164,9 @@ function main() {
     gl_FragColor = vec4(vColor, 1.);
     
     }`;
-    var compile_shader = function (source, type, typeString) {
-        var shader = GL.createShader(type);
-        GL.shaderSource(shader, source);
-        GL.compileShader(shader);
-        if (!GL.getShaderParameter(shader, GL.COMPILE_STATUS)) {
-            alert("ERROR IN " + typeString + " SHADER: " + GL.getShaderInfoLog(shader));
-            return false;
-        }
-        return shader;
-    };
 
-    var shader_vertex = compile_shader(shader_vertex_source, GL.VERTEX_SHADER, "VERTEX");
-    var shader_fragment = compile_shader(shader_fragment_source, GL.FRAGMENT_SHADER, "FRAGMENT");
-
-    var SHADER_PROGRAM = GL.createProgram();
-    GL.attachShader(SHADER_PROGRAM, shader_vertex);
-    GL.attachShader(SHADER_PROGRAM, shader_fragment);
-
-    GL.linkProgram(SHADER_PROGRAM);
-
-
-    var _color = GL.getAttribLocation(SHADER_PROGRAM, "color");
-    var _position = GL.getAttribLocation(SHADER_PROGRAM, "position");
-
-
-    //uniform
-    var _PMatrix = GL.getUniformLocation(SHADER_PROGRAM, "PMatrix"); //projection
-    var _VMatrix = GL.getUniformLocation(SHADER_PROGRAM, "VMatrix"); //View
-    var _MMatrix = GL.getUniformLocation(SHADER_PROGRAM, "MMatrix"); //Model
-
-
-    GL.enableVertexAttribArray(_color);
-    GL.enableVertexAttribArray(_position);
-    GL.useProgram(SHADER_PROGRAM);
 
     //Bikin BindBuffer dibawah ini
-
     //Warna
     var hijaumuda = [
         [16 / 200, 200 / 210, 150 / 250]
@@ -115,603 +186,294 @@ function main() {
         [0.0, 0.0, 1.0]
     ];
 
-
-
-
-
     //Kepala
     //==============================================================================================
-    var head = quadric.Ellipsoid(0, 0, 0, 1.2, 50, 1.5, 1, 1, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXHEAD = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXHEAD);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(head.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSHEAD = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSHEAD);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(head.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESHEAD = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESHEAD);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(head.faces), GL.STATIC_DRAW);
+    var headData = quadric.Ellipsoid(0, 0, 0, 1.2, 50, 1.5, 1, 1, hijaumuda);
+    var head = new MyObj(headData.vertices, headData.faces, shader_vertex_source, shader_fragment_source, headData.colors);
+    head.setup();    
     //==============================================================================================
 
     // Create buffers eye
     //==============================================================================================
-    var eyeMid = quadric.Ellipsoid(0, 0, 2.2, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXEYE = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXEYE);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(eyeMid.vertices), GL.STATIC_DRAW);
+    var mataTengahData = quadric.Ellipsoid(0, 0, 2.2, 2, 50, 0.2, 0.2, 0.2,putih);
+    var mataTengah = new MyObj(mataTengahData.vertices, mataTengahData.faces, shader_vertex_source, shader_fragment_source, mataTengahData.colors);
+    mataTengah.setup();    
 
-    var TUBE_COLORSEYE = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSEYE);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(eyeMid.colors), GL.STATIC_DRAW);
+    var mataKananData = quadric.Ellipsoid(1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var mataKanan = new MyObj(mataKananData.vertices, mataKananData.faces, shader_vertex_source, shader_fragment_source, mataKananData.colors);
+    mataKanan.setup();    
 
-    var TUBE_FACESEYE = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESEYE);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(eyeMid.faces), GL.STATIC_DRAW);
-    
+    var mataKiriData = quadric.Ellipsoid(-1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var mataKiri = new MyObj(mataKiriData.vertices, mataKiriData.faces, shader_vertex_source, shader_fragment_source, mataKiriData.colors);
+    mataKiri.setup();    
 
+    // //pupil  
+    var pupilMidData = quadric.Ellipsoid(0, -0.35, 2.2, 2, 50, 0.1, 0.05, 0.1, hitam); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pupilMid = new MyObj(pupilMidData.vertices, pupilMidData.faces, shader_vertex_source, shader_fragment_source, pupilMidData.colors);
+    pupilMid.setup();    
 
-    var eyeRight = quadric.Ellipsoid(1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXEYER = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXEYER);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(eyeRight.vertices), GL.STATIC_DRAW);
+    var pupilRightData = quadric.Ellipsoid(1.2, -0.35, 1.95, 2, 50, 0.1, 0.05, 0.1, hitam); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pupilRight = new MyObj(pupilRightData.vertices, pupilRightData.faces, shader_vertex_source, shader_fragment_source, pupilRightData.colors);
+    pupilRight.setup();    
 
-    var TUBE_COLORSEYER = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSEYER);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(eyeRight.colors), GL.STATIC_DRAW);
+    var pupilLeftData = quadric.Ellipsoid(-1.2, -0.35, 1.95, 2, 50, 0.1, 0.05, 0.1, hitam); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pupilLeft = new MyObj(pupilLeftData.vertices, pupilLeftData.faces, shader_vertex_source, shader_fragment_source, pupilLeftData.colors);
+    pupilLeft.setup();    
 
-    var TUBE_FACESEYER = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESEYER);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(eyeRight.faces), GL.STATIC_DRAW);
-    
-
-
-    var eyeLeft = quadric.Ellipsoid(-1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXEYEL = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXEYEL);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(eyeLeft.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSEYEL = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSEYEL);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(eyeLeft.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESEYEL = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESEYEL);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(eyeLeft.faces), GL.STATIC_DRAW);
-    
-
-    // //pupil
-    
-    var pupilMid = quadric.Ellipsoid(0, -0.35, 2.2, 2, 50, 0.1, 0.05, 0.1, hitam); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXPUPIL = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXPUPIL);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pupilMid.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSPUPIL = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSPUPIL);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pupilMid.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESPUPIL = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESPUPIL);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(pupilMid.faces), GL.STATIC_DRAW);
-    
-
-
-    var pupilRight = quadric.Ellipsoid(1.2, -0.35, 1.95, 2, 50, 0.1, 0.05, 0.1, hitam); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXPUPILR = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXPUPILR);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pupilRight.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSPUPILR = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSPUPILR);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pupilRight.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESPUPILR = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESPUPILR);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(pupilRight.faces), GL.STATIC_DRAW);
-    
-
-
-    var pupilLeft = quadric.Ellipsoid(-1.2, -0.35, 1.95, 2, 50, 0.1, 0.05, 0.1, hitam); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXPUPILL = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXPUPILL);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pupilLeft.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSPUPILL = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSPUPILL);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pupilLeft.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESPUPILL = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESPUPILL);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(eyeLeft.faces), GL.STATIC_DRAW);
-    
     //hiasan
-    var hiasanMid = quadric.Ellipsoid(0.05, -0.40, 2.25, 1, 50, 0.1, 0.05, 0.1, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXHIASAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXHIASAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(hiasanMid.vertices), GL.STATIC_DRAW);
+    var hiasanMidData = quadric.Ellipsoid(0.05, -0.40, 2.25, 1, 50, 0.1, 0.05, 0.1, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var hiasanMid = new MyObj(hiasanMidData.vertices, hiasanMidData.faces, shader_vertex_source, shader_fragment_source, hiasanMidData.colors);
+    hiasanMid.setup();    
 
-    var TUBE_COLORSHIASAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSHIASAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(hiasanMid.colors), GL.STATIC_DRAW);
+    var hiasanRightData = quadric.Ellipsoid(1.25, -0.4, 2, 1, 50, 0.1, 0.05, 0.1, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var hiasanRight = new MyObj(hiasanRightData.vertices, hiasanRightData.faces, shader_vertex_source, shader_fragment_source, hiasanRightData.colors);
+    hiasanRight.setup();    
 
-    var TUBE_FACESHIASAN = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESHIASAN);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(hiasanMid.faces), GL.STATIC_DRAW);
-    
-
-
-    var hiasanRight = quadric.Ellipsoid(1.25, -0.4, 2, 1, 50, 0.1, 0.05, 0.1, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXHIASANR = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXHIASANR);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(hiasanRight.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSHIASANR = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSHIASANR);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(hiasanRight.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESHIASANR = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESHIASANR);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(hiasanRight.faces), GL.STATIC_DRAW);
-    
-
-
-    var hiasanLeft = quadric.Ellipsoid(-1.15, -0.4, 2, 1, 50, 0.1, 0.05, 0.1, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXHIASANL = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXHIASANL);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(hiasanLeft.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSHIASANL = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSHIASANL);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(hiasanLeft.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESHIASANL = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESHIASANL);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(hiasanLeft.faces), GL.STATIC_DRAW);
+    var hiasanLeftData = quadric.Ellipsoid(-1.15, -0.4, 2, 1, 50, 0.1, 0.05, 0.1, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var hiasanLeft = new MyObj(hiasanLeftData.vertices, hiasanLeftData.faces, shader_vertex_source, shader_fragment_source, hiasanLeftData.colors);
+    hiasanLeft.setup();    
     //==============================================================================================
+
 
     // Create buffers kelopak
     //==============================================================================================
-    var kelopakMid = quadric.SetengahEllipsoid(0, 0, 2.2, 2, 50, 0.2, 0.2, 0.2, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXKELOPAK = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKELOPAK);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kelopakMid.vertices), GL.STATIC_DRAW);
+    var kelopakMidData = quadric.SetengahEllipsoid(0, 0, 2.2, 2, 50, 0.2, 0.2, 0.2, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kelopakMid = new MyObj(kelopakMidData.vertices, kelopakMidData.faces, shader_vertex_source, shader_fragment_source, kelopakMidData.colors);
+    kelopakMid.setup();    
 
-    var TUBE_COLORSKELOPAK = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKELOPAK);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kelopakMid.colors), GL.STATIC_DRAW);
+    var kelopakRightData = quadric.SetengahEllipsoid(1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kelopakRight = new MyObj(kelopakRightData.vertices, kelopakRightData.faces, shader_vertex_source, shader_fragment_source, kelopakRightData.colors);
+    kelopakRight.setup();    
 
-    var TUBE_FACESKELOPAK = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKELOPAK);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(kelopakMid.faces), GL.STATIC_DRAW);
-    
-
-    var kelopakRight = quadric.SetengahEllipsoid(1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXKELOPAKR = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKELOPAKR);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kelopakRight.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSKELOPAKR = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKELOPAKR);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kelopakRight.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESKELOPAKR = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKELOPAKR);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(kelopakRight.faces), GL.STATIC_DRAW);
-    
-    var kelopakLeft = quadric.SetengahEllipsoid(-1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXKELOPAKL = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKELOPAKL);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kelopakLeft.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSKELOPAKL = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKELOPAKL);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kelopakLeft.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESKELOPAKL = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKELOPAKL);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(kelopakLeft.faces), GL.STATIC_DRAW);
+    var kelopakLeftData = quadric.SetengahEllipsoid(-1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kelopakLeft = new MyObj(kelopakLeftData.vertices, kelopakLeftData.faces, shader_vertex_source, shader_fragment_source, kelopakLeftData.colors);
+    kelopakLeft.setup();    
     //==============================================================================================
 
     //anten
-    var anten1 = quadric.Tabung(0, 0, 1.8, 1.5, 0.5, 50, 0.05, 0.05, 0.05, 0, Math.PI, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXANTEN1 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXANTEN1);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(anten1.vertices), GL.STATIC_DRAW);
+    var anten1Data = quadric.Tabung(0, 0, 1.5, 2, 14, 50, 0.05, 0.05, 0.05, 0, Math.PI, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var anten1 = new MyObj(anten1Data.vertices, anten1Data.faces, shader_vertex_source, shader_fragment_source, anten1Data.colors);
+    anten1.setup();    
 
-    var TUBE_COLORSANTEN1 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSANTEN1);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(anten1.colors), GL.STATIC_DRAW);
+    var anten2Data = quadric.Tabung(0.9, 0, 1.3, 2, 14, 50, 0.05, 0.05, 0.05, 0, -Math.PI/7, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var anten2 = new MyObj(anten2Data.vertices, anten2Data.faces, shader_vertex_source, shader_fragment_source, anten2Data.colors);
+    anten2.setup();    
 
-    var TUBE_FACESANTEN1 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESANTEN1);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(anten1.faces), GL.STATIC_DRAW);
-
-    var anten2 = quadric.Tabung(0.8, 0, 1, 1.5, 0.5, 50, 0.05, 0.05, 0.05, 0, -Math.PI/7, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXANTEN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXANTEN2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(anten2.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSANTEN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSANTEN2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(anten2.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESANTEN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESANTEN2);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(anten2.faces), GL.STATIC_DRAW);
-
-    var anten3 = quadric.Tabung(-0.8, 0, 1, 1.5, 0.5, 50, 0.05, 0.05, 0.05, 0, Math.PI/7, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXANTEN3 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXANTEN3);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(anten3.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSANTEN3 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSANTEN3);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(anten3.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESANTEN3 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESANTEN3);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(anten3.faces), GL.STATIC_DRAW);
-
+    var anten3Data = quadric.Tabung(-0.9, 0, 1.3, 2, 14, 50, 0.05, 0.05, 0.05, 0, Math.PI/7, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var anten3 = new MyObj(anten3Data.vertices, anten3Data.faces, shader_vertex_source, shader_fragment_source, anten3Data.colors);
+    anten3.setup();    
     //==============================================================================================
 
     //leher
-    var leher = quadric.Tabung(0, 0, -1.95, 2.8, 0.3, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXLEHER = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXLEHER);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(leher.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSLEHER = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSLEHER);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(leher.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESLEHER = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESLEHER);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(leher.faces), GL.STATIC_DRAW);
-    
+    var leherData = quadric.Tabung(0, 0, -1.5, 5.6, 15, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var leher = new MyObj(leherData.vertices, leherData.faces, shader_vertex_source, shader_fragment_source, leherData.colors);
+    leher.setup();    
     //==============================================================================================
 
     //Pelengkap badan
-    var pbadan = quadric.Ellipsoid(0, 0, -2.4, 1.5, 50, 1, 1, 0.4,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXPBADAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXPBADAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pbadan.vertices), GL.STATIC_DRAW);
+    var pbadanData = quadric.Ellipsoid(0, 0, -2.4, 1.5, 50, 1, 1, 0.4,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pbadan = new MyObj(pbadanData.vertices, pbadanData.faces, shader_vertex_source, shader_fragment_source, pbadanData.colors);
+    pbadan.setup();    
 
-    var TUBE_COLORSPBADAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSPBADAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pbadan.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESPBADAN = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESPBADAN);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(pbadan.faces), GL.STATIC_DRAW);
-
-
-    var pbadan1 = quadric.Ellipsoid(0, 0, -4.8, 1.5, 50, 1, 1, 0.4,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXPBADAN1 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXPBADAN1);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pbadan1.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSPBADAN1 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSPBADAN1);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(pbadan1.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESPBADAN1 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESPBADAN1);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(pbadan1.faces), GL.STATIC_DRAW);
-
+    var pbadan1Data = quadric.Ellipsoid(0, 0, -4.8, 1.5, 50, 1, 1, 0.4,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pbadan1 = new MyObj(pbadan1Data.vertices, pbadan1Data.faces, shader_vertex_source, shader_fragment_source, pbadan1Data.colors);
+    pbadan1.setup();        
     //==============================================================================================
     
     //badan
-    var badan = quadric.Tabung(0, 0, -4.8, 1.20, 2, 50, 1, 1, 0, 0, 0, 0,gay); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXBADAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXBADAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(badan.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSBADAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSBADAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(badan.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESBADAN = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESBADAN);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(badan.faces), GL.STATIC_DRAW);
+    var badanData = quadric.Tabung(0, 0, -3.6, 1.40, 2.3, 50, 1, 1, 1, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var badan = new MyObj(badanData.vertices, badanData.faces, shader_vertex_source, shader_fragment_source, badanData.colors);
+    badan.setup();        
     //==============================================================================================
     
     //sendi
     //KANAN
-    var sendikanan = quadric.Ellipsoid(1.7, 0, -2.6, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXSENDIKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKANAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikanan.vertices), GL.STATIC_DRAW);
+    var sendikananData = quadric.Ellipsoid(1.7, 0, -2.6, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikanan = new MyObj(sendikananData.vertices, sendikananData.faces, shader_vertex_source, shader_fragment_source, sendikananData.colors);
+    sendikanan.setup();   
 
-    var TUBE_COLORSSENDIKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKANAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikanan.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESSENDIKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKANAN);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(sendikanan.faces), GL.STATIC_DRAW);
-    
     //LVL2
-    var sendikanan2 = quadric.Ellipsoid(1.7, 0, -4.2, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXSENDIKANAN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKANAN2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikanan2.vertices), GL.STATIC_DRAW);
+    var sendikanan2Data = quadric.Ellipsoid(1.7, 0, -4.2, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikanan2 = new MyObj(sendikanan2Data.vertices, sendikanan2Data.faces, shader_vertex_source, shader_fragment_source, sendikanan2Data.colors);
+    sendikanan2.setup();   
 
-    var TUBE_COLORSSENDIKANAN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKANAN2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikanan2.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESSENDIKANAN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKANAN2);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(sendikanan2.faces), GL.STATIC_DRAW);
-    
     //KANAN BAWAH
-    var sendikananbawah = quadric.Ellipsoid(1.2, 0, -5.4, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXSENDIKANANBAWAH = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKANANBAWAH);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikananbawah.vertices), GL.STATIC_DRAW);
+    var sendikananbawahData = quadric.Ellipsoid(1.2, 0, -5.4, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikananbawah = new MyObj(sendikananbawahData.vertices, sendikananbawahData.faces, shader_vertex_source, shader_fragment_source, sendikananbawahData.colors);
+    sendikananbawah.setup();   
 
-    var TUBE_COLORSSENDIKANANBAWAH = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKANANBAWAH);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikananbawah.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESSENDIKANANBAWAH = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKANANBAWAH);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(sendikananbawah.faces), GL.STATIC_DRAW);
-    
     //LVL2
-    var sendikananbawah2 = quadric.Ellipsoid(1.2, 0, -7, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXSENDIKANANBAWAH2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKANANBAWAH2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikananbawah2.vertices), GL.STATIC_DRAW);
+    var sendikananbawah2Data = quadric.Ellipsoid(1.2, 0, -7, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikananbawah2 = new MyObj(sendikananbawah2Data.vertices, sendikananbawah2Data.faces, shader_vertex_source, shader_fragment_source, sendikananbawah2Data.colors);
+    sendikananbawah2.setup();   
 
-    var TUBE_COLORSSENDIKANANBAWAH2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKANANBAWAH2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikananbawah2.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESSENDIKANANBAWAH2 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKANANBAWAH2);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(sendikananbawah2.faces), GL.STATIC_DRAW);
-    
     //KIRI
-    var sendikiri = quadric.Ellipsoid(-1.7, 0, -2.6, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXSENDIKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKIRI);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikiri.vertices), GL.STATIC_DRAW);
+    var sendikiriData = quadric.Ellipsoid(-1.7, 0, -2.6, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikiri = new MyObj(sendikiriData.vertices, sendikiriData.faces, shader_vertex_source, shader_fragment_source, sendikiriData.colors);
+    sendikiri.setup();   
 
-    var TUBE_COLORSSENDIKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKIRI);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikiri.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESSENDIKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKIRI);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(sendikiri.faces), GL.STATIC_DRAW);
-    
     //LVL2
-    var sendikiri2 = quadric.Ellipsoid(-1.7, 0, -4.2, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXSENDIKIRI2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKIRI2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikiri2.vertices), GL.STATIC_DRAW);
+    var sendikiri2Data = quadric.Ellipsoid(-1.7, 0, -4.2, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikiri2 = new MyObj(sendikiri2Data.vertices, sendikiri2Data.faces, shader_vertex_source, shader_fragment_source, sendikiri2Data.colors);
+    sendikiri2.setup();   
 
-    var TUBE_COLORSSENDIKIRI2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKIRI2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikiri2.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESSENDIKIRI2 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKIRI2);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(sendikiri2.faces), GL.STATIC_DRAW);
-    
     //KIRI BAWAH
-    var sendikiribawah = quadric.Ellipsoid(-1.2, 0, -5.4, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXSENDIKIRIBAWAH = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKIRIBAWAH);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikiribawah.vertices), GL.STATIC_DRAW);
+    var sendikiribawahData = quadric.Ellipsoid(-1.2, 0, -5.4, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikiribawah = new MyObj(sendikiribawahData.vertices, sendikiribawahData.faces, shader_vertex_source, shader_fragment_source, sendikiribawahData.colors);
+    sendikiribawah.setup();   
 
-    var TUBE_COLORSSENDIKIRIBAWAH = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKIRIBAWAH);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikiribawah.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESSENDIKIRIBAWAH = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKIRIBAWAH);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(sendikiribawah.faces), GL.STATIC_DRAW);
-    
     //LVL 2
-    var sendikiribawah2 = quadric.Ellipsoid(-1.2, 0, -7, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXSENDIKIRIBAWAH2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKIRIBAWAH2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikiribawah2.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSSENDIKIRIBAWAH2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKIRIBAWAH2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(sendikiribawah2.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESSENDIKIRIBAWAH2 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKIRIBAWAH2);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(sendikiribawah2.faces), GL.STATIC_DRAW);
-    
+    var sendikiribawah2Data = quadric.Ellipsoid(-1.2, 0, -7, 2, 50, 0.2, 0.2, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikiribawah2 = new MyObj(sendikiribawah2Data.vertices, sendikiribawah2Data.faces, shader_vertex_source, shader_fragment_source, sendikiribawah2Data.colors);
+    sendikiribawah2.setup();   
     //==============================================================================================
 
     //TABUNG TANGAN DAN KAKI LVL 1
     //==============================================================================================
     //TANGANkanan
-    var tangankanan = quadric.Tabung(1.7, 0, -4.2, 2.8, 0.6, 50, 0.05, 0.05, 0.05, 0, 0, 0,gay); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXTANGANKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTANGANKANAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(tangankanan.vertices), GL.STATIC_DRAW);
+    var tangankananData = quadric.Tabung(1.7, 0, -3.35, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var tangankanan = new MyObj(tangankananData.vertices, tangankananData.faces, shader_vertex_source, shader_fragment_source, tangankananData.colors);
+    tangankanan.setup();   
 
-    var TUBE_COLORSTANGANKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTANGANKANAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(tangankanan.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESTANGANKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTANGANKANAN);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(tangankanan.faces), GL.STATIC_DRAW);
-    
     //TANGANkiri
-    var tangankiri = quadric.Tabung(-1.7, 0, -4.2, 2.8, 0.6, 50, 0.05, 0.05, 0.05, 0, 0, 0,gay); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXTANGANKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTANGANKIRI);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(tangankiri.vertices), GL.STATIC_DRAW);
+    var tangankiriData = quadric.Tabung(-1.7, 0, -3.35, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var tangankiri = new MyObj(tangankiriData.vertices, tangankiriData.faces, shader_vertex_source, shader_fragment_source, tangankiriData.colors);
+    tangankiri.setup();   
 
-    var TUBE_COLORSTANGANKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTANGANKIRI);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(tangankiri.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESTANGANKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTANGANKIRI);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(tangankiri.faces), GL.STATIC_DRAW);
-    
     //kaki kanan
-    var kakikanan = quadric.Tabung(1.2, 0, -7, 2.8, 0.6, 50, 0.05, 0.05, 0.05, 0, 0, 0,gay); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXKAKIKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKAKIKANAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kakikanan.vertices), GL.STATIC_DRAW);
+    var kakikananData = quadric.Tabung(1.2, 0, -6.2, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kakikanan = new MyObj(kakikananData.vertices, kakikananData.faces, shader_vertex_source, shader_fragment_source, kakikananData.colors);
+    kakikanan.setup();   
 
-    var TUBE_COLORSKAKIKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKAKIKANAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kakikanan.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESKAKIKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKAKIKANAN);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(kakikanan.faces), GL.STATIC_DRAW);
-    
     //kaki kiri
-    var kakikiri = quadric.Tabung(-1.2, 0, -7, 2.8, 0.6, 50, 0.05, 0.05, 0.05, 0, 0, 0,gay); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXKAKIKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKAKIKIRI);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kakikiri.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSKAKIKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKAKIKIRI);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kakikiri.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESKAKIKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKAKIKIRI);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(kakikiri.faces), GL.STATIC_DRAW);
+    var kakikiriData = quadric.Tabung(-1.2, 0, -6.2, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kakikiri = new MyObj(kakikiriData.vertices, kakikiriData.faces, shader_vertex_source, shader_fragment_source, kakikiriData.colors);
+    kakikiri.setup();   
 
     //lvl2
     //TANGANkanan
-    var tangankanan2 = quadric.Tabung(1.7, 0, -5.9, 2.8, 0.6, 50, 0.05, 0.05, 0.05, 0, 0, 0,gay); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXTANGANKANAN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTANGANKANAN2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(tangankanan2.vertices), GL.STATIC_DRAW);
+    var tangankanan2Data = quadric.Tabung(1.7, 0, -5.1, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var tangankanan2 = new MyObj(tangankanan2Data.vertices, tangankanan2Data.faces, shader_vertex_source, shader_fragment_source, tangankanan2Data.colors);
+    tangankanan2.setup();   
 
-    var TUBE_COLORSTANGANKANAN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTANGANKANAN2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(tangankanan2.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESTANGANKANAN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTANGANKANAN2);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(tangankanan2.faces), GL.STATIC_DRAW);
-    
     //TANGANkiri
-    var tangankiri2 = quadric.Tabung(-1.7, 0, -5.9, 2.8, 0.6, 50, 0.05, 0.05, 0.05, 0, 0, 0,gay); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXTANGANKIRI2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTANGANKIRI2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(tangankiri2.vertices), GL.STATIC_DRAW);
+    var tangankiri2Data = quadric.Tabung(-1.7, 0, -5.1, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var tangankiri2 = new MyObj(tangankiri2Data.vertices, tangankiri2Data.faces, shader_vertex_source, shader_fragment_source, tangankiri2Data.colors);
+    tangankiri2.setup();  
 
-    var TUBE_COLORSTANGANKIRI2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTANGANKIRI2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(tangankiri2.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESTANGANKIRI2 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTANGANKIRI2);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(tangankiri2.faces), GL.STATIC_DRAW);
-    
     //kaki kanan
-    var kakikanan2 = quadric.Tabung(1.2, 0, -8.7, 2.8, 0.6, 50, 0.05, 0.05, 0.05, 0, 0, 0,gay); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXKAKIKANAN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKAKIKANAN2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kakikanan2.vertices), GL.STATIC_DRAW);
+    var kakikanan2Data = quadric.Tabung(1.2, 0, -7.8, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kakikanan2 = new MyObj(kakikanan2Data.vertices, kakikanan2Data.faces, shader_vertex_source, shader_fragment_source, kakikanan2Data.colors);
+    kakikanan2.setup();  
 
-    var TUBE_COLORSKAKIKANAN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKAKIKANAN2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kakikanan2.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESKAKIKANAN2 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKAKIKANAN2);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(kakikanan2.faces), GL.STATIC_DRAW);
-    
     //kaki kiri
-    var kakikiri2 = quadric.Tabung(-1.2, 0, -8.7, 2.8, 0.6, 50, 0.05, 0.05, 0.05, 0, 0, 0,gay); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXKAKIKIRI2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKAKIKIRI2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kakikiri2.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSKAKIKIRI2 = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKAKIKIRI2);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(kakikiri2.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESKAKIKIRI2 = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKAKIKIRI2);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(kakikiri2.faces), GL.STATIC_DRAW);
+    var kakikiri2Data = quadric.Tabung(-1.2, 0, -7.8, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0,hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kakikiri2 = new MyObj(kakikiri2Data.vertices, kakikiri2Data.faces, shader_vertex_source, shader_fragment_source, kakikiri2Data.colors);
+    kakikiri2.setup();  
     //==========================================================================================
 
     //telapaktangan
-    var telapakkanan = quadric.EllipticParaboloid(1.7, 0, -7, 5, 50, 0.05, 0.05, 0.1, 0, 0, 0,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXTELAPAKKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKANAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkanan.vertices), GL.STATIC_DRAW);
+    var telapakkananData = quadric.EllipticParaboloid(1.7, 0, -7, 5, 50, 0.05, 0.05, 0.1, 0, 0, 0,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var telapakkanan = new MyObj(telapakkananData.vertices, telapakkananData.faces, shader_vertex_source, shader_fragment_source, telapakkananData.colors);
+    telapakkanan.setup();  
 
-    var TUBE_COLORSTELAPAKKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKANAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkanan.colors), GL.STATIC_DRAW);
+    var telapakkiriData = quadric.EllipticParaboloid(-1.7, 0, -7, 5, 50, 0.05, 0.05, 0.1, 0, 0, 0,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var telapakkiri = new MyObj(telapakkiriData.vertices, telapakkiriData.faces, shader_vertex_source, shader_fragment_source, telapakkiriData.colors);
+    telapakkiri.setup();  
 
-    var TUBE_FACESTELAPAKKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKANAN);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(telapakkanan.faces), GL.STATIC_DRAW);
-    
-    var telapakkiri = quadric.EllipticParaboloid(-1.7, 0, -7, 5, 50, 0.05, 0.05, 0.1, 0, 0, 0,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXTELAPAKKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKIRI);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkiri.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSTELAPAKKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKIRI);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkiri.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESTELAPAKKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKIRI);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(telapakkiri.faces), GL.STATIC_DRAW);
-    
- //==========================================================================================
-    //telapak sikil
-
-    var telapakkakikanan = quadric.Ellipsoid(1.2, -0.4, -8.8, 2, 50, 0.3, 0.5, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXTELAPAKKAKIKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKAKIKANAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkakikanan.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSTELAPAKKAKIKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKAKIKANAN);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkakikanan.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESTELAPAKKAKIKANAN = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKAKIKANAN);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(telapakkakikanan.faces), GL.STATIC_DRAW);
-    
-
-    var telapakkakikiri = quadric.Ellipsoid(-1.2, -0.4, -8.8, 2, 50, 0.3, 0.5, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var TUBE_VERTEXTELAPAKKAKIKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKAKIKIRI);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkakikiri.vertices), GL.STATIC_DRAW);
-
-    var TUBE_COLORSTELAPAKKAKIKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKAKIKIRI);
-    GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(telapakkakikiri.colors), GL.STATIC_DRAW);
-
-    var TUBE_FACESTELAPAKKAKIKIRI = GL.createBuffer();
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKAKIKIRI);
-    GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(telapakkakikiri.faces), GL.STATIC_DRAW);
-    
     //==========================================================================================
-    
+    //telapak sikil
+    var telapakkakikananData = quadric.Ellipsoid(1.2, -0.4, -8.8, 2, 50, 0.3, 0.5, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var telapakkakikanan = new MyObj(telapakkakikananData.vertices, telapakkakikananData.faces, shader_vertex_source, shader_fragment_source, telapakkakikananData.colors);
+    telapakkakikanan.setup();  
+
+    var telapakkakikiriData = quadric.Ellipsoid(-1.2, -0.4, -8.8, 2, 50, 0.3, 0.5, 0.2,putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var telapakkakikiri = new MyObj(telapakkakikiriData.vertices, telapakkakikiriData.faces, shader_vertex_source, shader_fragment_source, telapakkakikiriData.colors);
+    telapakkakikiri.setup();  
+
+    //==========================================================================================
+    // Bagian Mulut
+    // var lambeData = quadric.Curves(
+    //     [
+    //         [-0.15, 0, -0.1],
+    //         [-0.12, 0, -0.3],
+    //         [0.12, 0, -0.3],
+    //         [0.15, 0, -0.1],
+    //     ], // --> object
+    //     0, // --> x
+    //     -1.5, // --> y
+    //     2, // --> z
+    //     100, // --> segment
+    //     0, // --> rotasi x
+    //     0, // --> rotasi y
+    //     0, // --> rotasi z
+    //     0.04 // --> ketebalan garis
+    // );
+    // var lambe = new MyObj(lambeData.vertices, lambeData.faces, shader_vertex_source, shader_fragment_source, lambeData.colors);
+    // lambe.setup();
+    //==========================================================================================
+
+    //parent child
+    head.child.push(anten1);
+    head.child.push(anten2);
+    head.child.push(anten3);
+    // head.child.push(lambe);
+    head.child.push(leher);
+
+    anten1.child.push(mataTengah);
+    anten2.child.push(mataKanan);
+    anten3.child.push(mataKiri);
+    anten1.child.push(kelopakMid);
+    anten2.child.push(kelopakRight);
+    anten3.child.push(kelopakLeft);
+
+    mataTengah.child.push(pupilMid);
+    mataKanan.child.push(pupilRight);
+    mataKiri.child.push(pupilLeft);
+
+    pupilMid.child.push(hiasanMid);
+    pupilRight.child.push(hiasanRight);
+    pupilLeft.child.push(hiasanLeft);
+
+
+    badan.child.push(head);
+    badan.child.push(pbadan);
+    badan.child.push(pbadan1);
+
+    sendikanan.child.push(sendikanan2);
+    sendikanan.child.push(tangankanan);
+    sendikanan.child.push(tangankanan2);
+    sendikanan.child.push(telapakkanan);
+
+    sendikiri.child.push(sendikiri2);
+    sendikiri.child.push(tangankiri);
+    sendikiri.child.push(tangankiri2);
+    sendikiri.child.push(telapakkiri);
+
+    sendikananbawah.child.push(sendikananbawah2);
+    sendikananbawah.child.push(kakikanan);
+    sendikananbawah.child.push(kakikanan2);
+    sendikananbawah.child.push(telapakkakikanan);
+
+    sendikiribawah.child.push(sendikiribawah2);
+    sendikiribawah.child.push(kakikiri);
+    sendikiribawah.child.push(kakikiri2);
+    sendikiribawah.child.push(telapakkakikiri);
+
+
+
+
+
+
+
+
 
     //matrix
     var PROJECTION_MATRIX = LIBS.get_projection(40, CANVAS.width / CANVAS.height, 1, 100);
     var VIEW_MATRIX = LIBS.get_I4();
-    var MODEL_MATRIX = LIBS.get_I4();
+    var MODEL_MATRIX2 = LIBS.get_I4();
+    var MODEL_MATRIX3 = LIBS.get_I4();
+    var MODEL_MATRIX4 = LIBS.get_I4();
 
     // Event listener untuk mouse movement
     document.addEventListener('mousemove', function (event) {
@@ -791,14 +553,24 @@ function main() {
     });
 
 
+
     /*========================= DRAWING ========================= */
     GL.clearColor(0.0, 0.0, 0.0, 0.0);
-
 
     GL.enable(GL.DEPTH_TEST);
     GL.depthFunc(GL.LEQUAL);
 
     var cameraSpeed = 0.1; // Kecepatan pergerakan kamera
+
+    var depressoMovementSpeed = 0.05; // Movement speed for badan2
+    var walkFront = true; // Initial movement direction for badan2
+    var depressoPos = [0, -0.9, 0.5];
+    var depressoFeet1Pos = [0.2, -1.4, 0.5];
+    var depressoFeet2Pos = [-0.2, -1.4, 0.5];
+
+    var walkAngle = 0; // Initial angle for walking animation
+    var walkSpeed = 0.010; // Speed of the walking animation
+    var maxWalkAngle = Math.PI / 20;
 
     var time_prev = 0;
     var animate = function (time) {
@@ -820,639 +592,31 @@ function main() {
         if (keysPressed.d) {
             LIBS.translateX(VIEW_MATRIX, cameraSpeed);
         }
-    
-    //draw dibawah ini
-    //Draw Head
-    //==============================================================================================
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXHEAD);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
 
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSHEAD);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
+    //draw
+    var MODEL_MATRIX = LIBS.get_I4();
+    head.MODEL_MATRIX = MODEL_MATRIX;
+    head.render(head.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESHEAD);
+    badan.MODEL_MATRIX = MODEL_MATRIX;
+    badan.render(badan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
+    sendikanan.MODEL_MATRIX = MODEL_MATRIX;
+    sendikanan.render(sendikanan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
-    GL.drawElements(GL.TRIANGLES, head.faces.length, GL.UNSIGNED_SHORT, 0);
-    //==============================================================================================
+    sendikiri.MODEL_MATRIX = MODEL_MATRIX;
+    sendikiri.render(sendikiri.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
-    //Draw Eye
-    //==============================================================================================
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXEYE);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
+    sendikananbawah.MODEL_MATRIX = MODEL_MATRIX;
+    sendikananbawah.render(sendikananbawah.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSEYE);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
+    sendikiribawah.MODEL_MATRIX = MODEL_MATRIX;
+    sendikiribawah.render(sendikiribawah.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESEYE);
 
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
 
-    GL.drawElements(GL.TRIANGLES, eyeMid.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    
-    
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXEYER);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
 
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSEYER);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
 
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESEYER);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, eyeRight.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXEYEL);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSEYEL);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESEYEL);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, eyeLeft.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-
-    //pupil
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXPUPIL);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSPUPIL);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESPUPIL);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, pupilMid.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    
-    
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXPUPILR);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSPUPILR);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESPUPILR);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, pupilRight.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXPUPILL);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSPUPILL);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESPUPILL);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, pupilLeft.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //hiasan
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXHIASAN);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSHIASAN);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESHIASAN);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, hiasanMid.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    
-    
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXHIASANR);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSHIASANR);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESHIASANR);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, hiasanRight.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXHIASANL);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSHIASANL);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESHIASANL);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, hiasanLeft.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //==============================================================================================
-
-    //Draw Kelopak
-    //==============================================================================================
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKELOPAK);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKELOPAK);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKELOPAK);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, kelopakMid.faces.length, GL.UNSIGNED_SHORT, 0);
-
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKELOPAKR);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKELOPAKR);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKELOPAKR);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, kelopakRight.faces.length, GL.UNSIGNED_SHORT, 0);
-
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKELOPAKL);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKELOPAKL);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKELOPAKL);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, kelopakLeft.faces.length, GL.UNSIGNED_SHORT, 0);
-
-    //draw anten
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXANTEN1);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSANTEN1);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESANTEN1);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, anten1.faces.length, GL.UNSIGNED_SHORT, 0);
-
-
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXANTEN2);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSANTEN2);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESANTEN2);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, anten2.faces.length, GL.UNSIGNED_SHORT, 0);
-
-
-
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXANTEN3);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSANTEN3);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESANTEN3);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, anten3.faces.length, GL.UNSIGNED_SHORT, 0);
-
-    //==============================================================================================
-
-    //draw leher
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXLEHER);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSLEHER);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESLEHER);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, leher.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //==============================================================================================
-    //draw pelengkap badan
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXPBADAN);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSPBADAN);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESPBADAN);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, pbadan.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-
-
-
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXPBADAN1);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSPBADAN1);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESPBADAN1);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, pbadan1.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //==============================================================================================
-    
-    //draw badan
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXBADAN);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSBADAN);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESBADAN);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, badan.faces.length, GL.UNSIGNED_SHORT, 0);
-    //==============================================================================================
-    
-    // draw sendi
-    //KANAN
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKANAN);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKANAN);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKANAN);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, sendikanan.faces.length, GL.UNSIGNED_SHORT, 0);
-
-    //KANAN BAWAH
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKANANBAWAH);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKANANBAWAH);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKANANBAWAH);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, sendikananbawah.faces.length, GL.UNSIGNED_SHORT, 0);
-
-    //KIRI
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKIRI);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKIRI);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKIRI);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, sendikiri.faces.length, GL.UNSIGNED_SHORT, 0);
-
-    //KIRI BAWAH
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKIRIBAWAH);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKIRIBAWAH);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKIRIBAWAH);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, sendikiribawah.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    
-    //LVL2
-    //KANAN
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKANAN2);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKANAN2);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKANAN2);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, sendikanan2.faces.length, GL.UNSIGNED_SHORT, 0);
-
-    //KANAN BAWAH
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKANANBAWAH2);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKANANBAWAH2);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKANANBAWAH2);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, sendikananbawah2.faces.length, GL.UNSIGNED_SHORT, 0);
-
-    //KIRI
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKIRI2);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKIRI2);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKIRI2);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, sendikiri2.faces.length, GL.UNSIGNED_SHORT, 0);
-
-    //KIRI BAWAH
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXSENDIKIRIBAWAH2);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSSENDIKIRIBAWAH2);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESSENDIKIRIBAWAH2);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, sendikiribawah2.faces.length, GL.UNSIGNED_SHORT, 0);
-    //==============================================================================================
-    
-    //DRAW KAKI TANGAN TABUNG
-    //TANGAN KANAN
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTANGANKANAN);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTANGANKANAN);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTANGANKANAN);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, tangankanan.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //TANGAN KIRI
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTANGANKIRI);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTANGANKIRI);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTANGANKIRI);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, tangankiri.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //KAKI KANAN
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKAKIKANAN);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKAKIKANAN);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKAKIKANAN);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, kakikanan.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //KAKI KIRI
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKAKIKIRI);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKAKIKIRI);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKAKIKIRI);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, kakikiri.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //lvl 2
-    //TANGAN KANAN
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTANGANKANAN2);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTANGANKANAN2);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTANGANKANAN2);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, tangankanan2.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //TANGAN KIRI
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTANGANKIRI2);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTANGANKIRI2);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTANGANKIRI2);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, tangankiri2.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //KAKI KANAN
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKAKIKANAN2);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKAKIKANAN2);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKAKIKANAN2);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, kakikanan2.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //KAKI KIRI
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXKAKIKIRI2);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSKAKIKIRI2);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESKAKIKIRI2);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, kakikiri2.faces.length, GL.UNSIGNED_SHORT, 0);
-    
-    //==============================================================================================
-
-    //TELAPAK
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKANAN);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKANAN);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKANAN);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, telapakkanan.faces.length, GL.UNSIGNED_SHORT, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKIRI);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKIRI);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKIRI);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, telapakkiri.faces.length, GL.UNSIGNED_SHORT, 0);
-    //==============================================================================================
-
-    //telapak sikil
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKAKIKANAN);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKAKIKANAN);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKAKIKANAN);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, telapakkakikanan.faces.length, GL.UNSIGNED_SHORT, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_VERTEXTELAPAKKAKIKIRI);
-    GL.vertexAttribPointer(_position, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ARRAY_BUFFER, TUBE_COLORSTELAPAKKAKIKIRI);
-    GL.vertexAttribPointer(_color, 3, GL.FLOAT, false, 0, 0);
-
-    GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TUBE_FACESTELAPAKKAKIKIRI);
-
-    GL.uniformMatrix4fv(_PMatrix, false, PROJECTION_MATRIX);
-    GL.uniformMatrix4fv(_VMatrix, false, VIEW_MATRIX);
-    GL.uniformMatrix4fv(_MMatrix, false, MODEL_MATRIX);
-
-    GL.drawElements(GL.TRIANGLES, telapakkakikiri.faces.length, GL.UNSIGNED_SHORT, 0);
 
 
 
