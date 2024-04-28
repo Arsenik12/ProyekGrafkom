@@ -393,31 +393,53 @@ function main() {
 
     //==========================================================================================
     // Bagian Mulut
-    // var lambeData = quadric.Curves(
-    //     [
-    //         [-0.15, 0, -0.1],
-    //         [-0.12, 0, -0.3],
-    //         [0.12, 0, -0.3],
-    //         [0.15, 0, -0.1],
-    //     ], // --> object
-    //     0, // --> x
-    //     -1.5, // --> y
-    //     2, // --> z
-    //     100, // --> segment
-    //     0, // --> rotasi x
-    //     0, // --> rotasi y
-    //     0, // --> rotasi z
-    //     0.04 // --> ketebalan garis
-    // );
-    // var lambe = new MyObj(lambeData.vertices, lambeData.faces, shader_vertex_source, shader_fragment_source, lambeData.colors);
-    // lambe.setup();
+    var lambeData = quadric.Curves(
+        [
+            [-0.25, 0, -0.1],
+            [-0.12, 0, -0.3],
+            [0.12, 0, -0.3],
+            [0.1, 0, -0.1],
+        ], // --> object
+        -0.1, // --> x
+        -1.2, // --> y
+        0.1, // --> z
+        100, // --> segment
+        0, // --> rotasi x
+        0, // --> rotasi y
+        0, // --> rotasi z
+        0.04, // --> ketebalan garis
+        putih
+    );
+    var lambe = new MyObj(lambeData.vertices, lambeData.faces, shader_vertex_source, shader_fragment_source, lambeData.colors);
+    lambe.setup();
+
+    var lambe2Data = quadric.Curves(
+        [
+            [-0.1, 0, -0.1],
+            [-0.12, 0, -0.3],
+            [0.12, 0, -0.3],
+            [0.25, 0, -0.1],
+        ], // --> object
+        0.1, // --> x
+        -1.2, // --> y
+        0.1, // --> z
+        100, // --> segment
+        0, // --> rotasi x
+        0, // --> rotasi y
+        0, // --> rotasi z
+        0.04, // --> ketebalan garis
+        putih
+    );
+    var lambe2 = new MyObj(lambe2Data.vertices, lambe2Data.faces, shader_vertex_source, shader_fragment_source, lambe2Data.colors);
+    lambe2.setup();
     //==========================================================================================
 
     //parent child
     head.child.push(anten1);
     head.child.push(anten2);
     head.child.push(anten3);
-    // head.child.push(lambe);
+    head.child.push(lambe);
+    head.child.push(lambe2);
     head.child.push(leher);
 
     anten1.child.push(mataTengah);
@@ -439,6 +461,12 @@ function main() {
     badan.child.push(head);
     badan.child.push(pbadan);
     badan.child.push(pbadan1);
+
+    badan.child.push(sendikanan);
+    badan.child.push(sendikiri);
+    badan.child.push(sendikananbawah);
+    badan.child.push(sendikiribawah);
+
 
     sendikanan.child.push(sendikanan2);
     sendikanan.child.push(tangankanan);
