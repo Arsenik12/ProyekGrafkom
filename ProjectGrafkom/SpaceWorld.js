@@ -218,6 +218,32 @@ function main() {
     
     }`;
 
+    var hijaumuda = [
+        [16 / 200, 200 / 210, 150 / 250]
+    ];
+
+    var putih = [
+        [1 / 1, 1 / 1, 1 / 1]
+    ];
+
+    var hitam = [
+        [0 / 0, 0 / 0, 0 / 0]
+    ];
+
+    var rb = [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0]
+    ];
+
+    var grey = [
+        [0.6, 0.6, 0.7]
+    ];
+
+    var blue = [
+        [0.0, 0.0, 1.0]
+    ];
+
     //ENVIRONMENT
     // Pesawat UFO
     var piringData = quadric.Ellipsoid(0, 0, 0, 10, 100, 1, 1, 0.2, [[71 / 255, 78 / 255, 104 / 255]]);
@@ -271,13 +297,66 @@ function main() {
     piring.child.push(bulatKecil7);
     piring.child.push(bulatKecil8);
 
+    //Roket
+    //tanduk
+    var tandukData = quadric.EllipticCone(0, 0, 5.6, 1, 50, 0.2, 0.2, 0.8, 0, Math.PI, 0, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var tanduk = new MyObj(tandukData.vertices, tandukData.faces, shader_vertex_source, shader_fragment_source, tandukData.colors);
+    tanduk.setup();
+    //==============================================================================================
+
+    //head
+    var palapesawatData = quadric.Ellipsoid(0, 0, 4.2, 1.2, 50, 0.5, 0.5, 0.8, grey); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var palapesawat = new MyObj(palapesawatData.vertices, palapesawatData.faces, shader_vertex_source, shader_fragment_source, palapesawatData.colors);
+    palapesawat.setup();
+
+    //kaca
+    var glassData = quadric.Ellipsoid(0, 0.4, 4.2, 1.2, 50, 0.4, 0.2, 0.4, blue); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var glass = new MyObj(glassData.vertices, glassData.faces, shader_vertex_source, shader_fragment_source, glassData.colors);
+    glass.setup();
+
+    //badan
+    var badanpesawatData = quadric.Ellipsoid(0, 0, 0, 1.2, 50, 1.2, 1, 2.5, grey); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var badanpesawat = new MyObj(badanpesawatData.vertices, badanpesawatData.faces, shader_vertex_source, shader_fragment_source, badanpesawatData.colors);
+    badanpesawat.setup();
+
+    //pipa
+    var pipeData = quadric.Tabung(0, 0, 3.2, 3, 10, 50, 0.05, 0.05, 0.05, 0, 0, 0, grey); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pipe = new MyObj(pipeData.vertices, pipeData.faces, shader_vertex_source, shader_fragment_source, pipeData.colors);
+    pipe.setup();
+
+    //kenalpot
+    var kenData = quadric.Ellipsoid(1.5, 0, -3, 1, 50, 0.8, 0.8, 2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var ken = new MyObj(kenData.vertices, kenData.faces, shader_vertex_source, shader_fragment_source, kenData.colors);
+    ken.setup();
+
+    var ken2Data = quadric.Ellipsoid(-1.5, 0, -3, 1, 50, 0.8, 0.8, 2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var ken2 = new MyObj(ken2Data.vertices, ken2Data.faces, shader_vertex_source, shader_fragment_source, ken2Data.colors);
+    ken2.setup();
+
+    var ken3Data = quadric.Ellipsoid(0, 1.5, -3, 1, 50, 0.8, 0.8, 2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var ken3 = new MyObj(ken3Data.vertices, ken3Data.faces, shader_vertex_source, shader_fragment_source, ken3Data.colors);
+    ken3.setup();
+
+    var ken4Data = quadric.Ellipsoid(0, -1.5, -3, 1, 50, 0.8, 0.8, 2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var ken4 = new MyObj(ken4Data.vertices, ken4Data.faces, shader_vertex_source, shader_fragment_source, ken4Data.colors);
+    ken4.setup();
+
+    //parent child
+
+    palapesawat.child.push(tanduk);
+    palapesawat.child.push(glass);
+
+    pipe.child.push(palapesawat);
+
+    badanpesawat.child.push(pipe);
+    badanpesawat.child.push(ken);
+    badanpesawat.child.push(ken2);
+    badanpesawat.child.push(ken3);
+    badanpesawat.child.push(ken4);
+
+
 
     // Planet
-    // // Bumi 
-    // var bumiData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    // var bumi = new MyObj(bumiData.vertices, bumiData.faces, shader_vertex_source, shader_fragment_source, bumiData.colors);
-    // bumi.setupTexture(); // Memuat dan mengatur tekstur
-    // bumi.setup(); // Menyiapkan buffer dan konfigurasi lainnya
 
     // // Bulan 
     // var bulanData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
@@ -285,35 +364,20 @@ function main() {
     // bulan.setupTexture();
     // bulan.setup();
 
-    // // Mars 
-    // var marsData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    // var mars = new MyObj(marsData.vertices, marsData.faces, shader_vertex_source, shader_fragment_source, marsData.colors, 'link_gambar_bumi.jpg');
-    // mars.setupTexture();
-    // mars.setup();
+    // Mars 
+    var marsData = quadric.Ellipsoid(0, 0, 0.5, 10, 100, 0.6, 0.6, 0.5, [[212 / 255, 87 / 255, 57 / 255]]);
+    var mars = new MyObj(marsData.vertices, marsData.faces, shader_vertex_source, shader_fragment_source, marsData.colors);
+    mars.setup();
 
-    // // Jupiter
-    // var jupiterData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    // var jupiter = new MyObj(jupiterData.vertices, jupiterData.faces, shader_vertex_source, shader_fragment_source, jupiterData.colors, 'link_gambar_bumi.jpg');
-    // jupiter.setupTexture();
-    // jupiter.setup();
+    // Neptunus 
+    var neptunusData = quadric.Ellipsoid(0, 0, 0.5, 10, 100, 0.6, 0.6, 0.5, [[64 / 255, 102 / 255, 255 / 255]]);
+    var neptunus = new MyObj(neptunusData.vertices, neptunusData.faces, shader_vertex_source, shader_fragment_source, neptunusData.colors);
+    neptunus.setup();
 
-    // // Neptunus 
-    // var neptunusData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    // var neptunus = new MyObj(neptunusData.vertices, neptunusData.faces, shader_vertex_source, shader_fragment_source, neptunusData.colors, 'link_gambar_bumi.jpg');
-    // neptunus.setupTexture();
-    // neptunus.setup();
-
-    // // Saturnus
-    // var saturnusData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    // var saturnus = new MyObj(saturnusData.vertices, saturnusData.faces, shader_vertex_source, shader_fragment_source, saturnusData.colors, 'link_gambar_bumi.jpg');
-    // saturnus.setupTexture();
-    // saturnus.setup();
-
-    // // Matahari
-    // var matahariData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    // var matahari = new MyObj(matahariData.vertices, matahariData.faces, shader_vertex_source, shader_fragment_source, matahariData.colors, 'link_gambar_bumi.jpg');
-    // matahari.setupTexture();
-    // matahari.setup();
+    // Uranus
+    var uranusData = quadric.Ellipsoid(0, 0, 0.5, 10, 100, 0.6, 0.6, 0.5, [[159 / 255, 209 / 255, 227 / 255]]);
+    var uranus = new MyObj(uranusData.vertices, neptunusData.faces, shader_vertex_source, shader_fragment_source, neptunusData.colors);
+    uranus.setup();
 
 
     //OBJECT CHARACTER 1
@@ -518,10 +582,310 @@ function main() {
     badan.child.push(badan_bawah);
     badan.child.push(engsel_tangan_kanan);
     badan.child.push(engsel_tangan_kiri);
-    badan.child.push(engsel_kaki_kanan);
-    badan.child.push(engsel_kaki_kiri);
+    // badan.child.push(engsel_kaki_kanan);
+    // badan.child.push(engsel_kaki_kiri);
 
     //OBJECT2 CHARACTER 2
+    //Kepala
+    //==============================================================================================
+    var headData = quadric.Ellipsoid(0, 0, 0, 1.2, 50, 1.5, 1, 1, hijaumuda);
+    var head = new MyObj(headData.vertices, headData.faces, shader_vertex_source, shader_fragment_source, headData.colors);
+    head.setup();
+    //==============================================================================================
+
+    // Create buffers eye
+    //==============================================================================================
+    var mataTengahData = quadric.Ellipsoid(0, 0, 2.2, 2, 50, 0.2, 0.2, 0.2, putih);
+    var mataTengah = new MyObj(mataTengahData.vertices, mataTengahData.faces, shader_vertex_source, shader_fragment_source, mataTengahData.colors);
+    mataTengah.setup();
+
+    var mataKananData = quadric.Ellipsoid(1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var mataKanan = new MyObj(mataKananData.vertices, mataKananData.faces, shader_vertex_source, shader_fragment_source, mataKananData.colors);
+    mataKanan.setup();
+
+    var mataKiriData = quadric.Ellipsoid(-1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var mataKiri = new MyObj(mataKiriData.vertices, mataKiriData.faces, shader_vertex_source, shader_fragment_source, mataKiriData.colors);
+    mataKiri.setup();
+
+    // //pupil  
+    var pupilMidData = quadric.Ellipsoid(0, -0.35, 2.2, 2, 50, 0.1, 0.05, 0.1, hitam); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pupilMid = new MyObj(pupilMidData.vertices, pupilMidData.faces, shader_vertex_source, shader_fragment_source, pupilMidData.colors);
+    pupilMid.setup();
+
+    var pupilRightData = quadric.Ellipsoid(1.2, -0.35, 1.95, 2, 50, 0.1, 0.05, 0.1, hitam); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pupilRight = new MyObj(pupilRightData.vertices, pupilRightData.faces, shader_vertex_source, shader_fragment_source, pupilRightData.colors);
+    pupilRight.setup();
+
+    var pupilLeftData = quadric.Ellipsoid(-1.2, -0.35, 1.95, 2, 50, 0.1, 0.05, 0.1, hitam); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pupilLeft = new MyObj(pupilLeftData.vertices, pupilLeftData.faces, shader_vertex_source, shader_fragment_source, pupilLeftData.colors);
+    pupilLeft.setup();
+
+    //hiasan
+    var hiasanMidData = quadric.Ellipsoid(0.05, -0.40, 2.25, 1, 50, 0.1, 0.05, 0.1, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var hiasanMid = new MyObj(hiasanMidData.vertices, hiasanMidData.faces, shader_vertex_source, shader_fragment_source, hiasanMidData.colors);
+    hiasanMid.setup();
+
+    var hiasanRightData = quadric.Ellipsoid(1.25, -0.4, 2, 1, 50, 0.1, 0.05, 0.1, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var hiasanRight = new MyObj(hiasanRightData.vertices, hiasanRightData.faces, shader_vertex_source, shader_fragment_source, hiasanRightData.colors);
+    hiasanRight.setup();
+
+    var hiasanLeftData = quadric.Ellipsoid(-1.15, -0.4, 2, 1, 50, 0.1, 0.05, 0.1, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var hiasanLeft = new MyObj(hiasanLeftData.vertices, hiasanLeftData.faces, shader_vertex_source, shader_fragment_source, hiasanLeftData.colors);
+    hiasanLeft.setup();
+    //==============================================================================================
+
+
+    // Create buffers kelopak
+    //==============================================================================================
+    var kelopakMidData = quadric.SetengahEllipsoid(0, 0, 2.2, 2, 50, 0.2, 0.2, 0.2, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kelopakMid = new MyObj(kelopakMidData.vertices, kelopakMidData.faces, shader_vertex_source, shader_fragment_source, kelopakMidData.colors);
+    kelopakMid.setup();
+
+    var kelopakRightData = quadric.SetengahEllipsoid(1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kelopakRight = new MyObj(kelopakRightData.vertices, kelopakRightData.faces, shader_vertex_source, shader_fragment_source, kelopakRightData.colors);
+    kelopakRight.setup();
+
+    var kelopakLeftData = quadric.SetengahEllipsoid(-1.2, 0, 1.9, 2, 50, 0.2, 0.2, 0.2, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kelopakLeft = new MyObj(kelopakLeftData.vertices, kelopakLeftData.faces, shader_vertex_source, shader_fragment_source, kelopakLeftData.colors);
+    kelopakLeft.setup();
+    //==============================================================================================
+
+    //anten
+    var anten1Data = quadric.Tabung(0, 0, 1.5, 2, 14, 50, 0.05, 0.05, 0.05, 0, Math.PI, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var anten1 = new MyObj(anten1Data.vertices, anten1Data.faces, shader_vertex_source, shader_fragment_source, anten1Data.colors);
+    anten1.setup();
+
+    var anten2Data = quadric.Tabung(0.9, 0, 1.3, 2, 14, 50, 0.05, 0.05, 0.05, 0, -Math.PI / 7, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var anten2 = new MyObj(anten2Data.vertices, anten2Data.faces, shader_vertex_source, shader_fragment_source, anten2Data.colors);
+    anten2.setup();
+
+    var anten3Data = quadric.Tabung(-0.9, 0, 1.3, 2, 14, 50, 0.05, 0.05, 0.05, 0, Math.PI / 7, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var anten3 = new MyObj(anten3Data.vertices, anten3Data.faces, shader_vertex_source, shader_fragment_source, anten3Data.colors);
+    anten3.setup();
+    //==============================================================================================
+
+    //leher
+    var leherData = quadric.Tabung(0, 0, -1.5, 5.6, 15, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var leher = new MyObj(leherData.vertices, leherData.faces, shader_vertex_source, shader_fragment_source, leherData.colors);
+    leher.setup();
+    //==============================================================================================
+
+    //Pelengkap badan
+    var pbadanData = quadric.Ellipsoid(0, 0, -2.4, 1.5, 50, 1, 1, 0.4, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pbadan = new MyObj(pbadanData.vertices, pbadanData.faces, shader_vertex_source, shader_fragment_source, pbadanData.colors);
+    pbadan.setup();
+
+    var pbadan1Data = quadric.Ellipsoid(0, 0, -4.8, 1.5, 50, 1, 1, 0.4, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var pbadan1 = new MyObj(pbadan1Data.vertices, pbadan1Data.faces, shader_vertex_source, shader_fragment_source, pbadan1Data.colors);
+    pbadan1.setup();
+    //==============================================================================================
+
+    //badan
+    var badanzData = quadric.Tabung(0, 0, -3.6, 1.40, 2.3, 50, 1, 1, 1, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var badanz = new MyObj(badanzData.vertices, badanzData.faces, shader_vertex_source, shader_fragment_source, badanzData.colors);
+    badanz.setup();
+    //==============================================================================================
+
+    //sendi
+    //KANAN
+    var sendikananData = quadric.Ellipsoid(1.7, 0, -2.6, 2, 50, 0.2, 0.2, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikanan = new MyObj(sendikananData.vertices, sendikananData.faces, shader_vertex_source, shader_fragment_source, sendikananData.colors);
+    sendikanan.setup();
+
+    //LVL2
+    var sendikanan2Data = quadric.Ellipsoid(1.7, 0, -4.2, 2, 50, 0.2, 0.2, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikanan2 = new MyObj(sendikanan2Data.vertices, sendikanan2Data.faces, shader_vertex_source, shader_fragment_source, sendikanan2Data.colors);
+    sendikanan2.setup();
+
+    //KANAN BAWAH
+    var sendikananbawahData = quadric.Ellipsoid(1.2, 0, -5.4, 2, 50, 0.2, 0.2, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikananbawah = new MyObj(sendikananbawahData.vertices, sendikananbawahData.faces, shader_vertex_source, shader_fragment_source, sendikananbawahData.colors);
+    sendikananbawah.setup();
+
+    //LVL2
+    var sendikananbawah2Data = quadric.Ellipsoid(1.2, 0, -7, 2, 50, 0.2, 0.2, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikananbawah2 = new MyObj(sendikananbawah2Data.vertices, sendikananbawah2Data.faces, shader_vertex_source, shader_fragment_source, sendikananbawah2Data.colors);
+    sendikananbawah2.setup();
+
+    //KIRI
+    var sendikiriData = quadric.Ellipsoid(-1.7, 0, -2.6, 2, 50, 0.2, 0.2, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikiri = new MyObj(sendikiriData.vertices, sendikiriData.faces, shader_vertex_source, shader_fragment_source, sendikiriData.colors);
+    sendikiri.setup();
+
+    //LVL2
+    var sendikiri2Data = quadric.Ellipsoid(-1.7, 0, -4.2, 2, 50, 0.2, 0.2, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikiri2 = new MyObj(sendikiri2Data.vertices, sendikiri2Data.faces, shader_vertex_source, shader_fragment_source, sendikiri2Data.colors);
+    sendikiri2.setup();
+
+    //KIRI BAWAH
+    var sendikiribawahData = quadric.Ellipsoid(-1.2, 0, -5.4, 2, 50, 0.2, 0.2, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikiribawah = new MyObj(sendikiribawahData.vertices, sendikiribawahData.faces, shader_vertex_source, shader_fragment_source, sendikiribawahData.colors);
+    sendikiribawah.setup();
+
+    //LVL 2
+    var sendikiribawah2Data = quadric.Ellipsoid(-1.2, 0, -7, 2, 50, 0.2, 0.2, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var sendikiribawah2 = new MyObj(sendikiribawah2Data.vertices, sendikiribawah2Data.faces, shader_vertex_source, shader_fragment_source, sendikiribawah2Data.colors);
+    sendikiribawah2.setup();
+    //==============================================================================================
+
+    //TABUNG TANGAN DAN KAKI LVL 1
+    //==============================================================================================
+    //TANGANkanan
+    var tangankananData = quadric.Tabung(1.7, 0, -3.35, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var tangankanan = new MyObj(tangankananData.vertices, tangankananData.faces, shader_vertex_source, shader_fragment_source, tangankananData.colors);
+    tangankanan.setup();
+
+    //TANGANkiri
+    var tangankiriData = quadric.Tabung(-1.7, 0, -3.35, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var tangankiri = new MyObj(tangankiriData.vertices, tangankiriData.faces, shader_vertex_source, shader_fragment_source, tangankiriData.colors);
+    tangankiri.setup();
+
+    //kaki kanan
+    var kakikananData = quadric.Tabung(1.2, 0, -6.2, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kakikanan = new MyObj(kakikananData.vertices, kakikananData.faces, shader_vertex_source, shader_fragment_source, kakikananData.colors);
+    kakikanan.setup();
+
+    //kaki kiri
+    var kakikiriData = quadric.Tabung(-1.2, 0, -6.2, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kakikiri = new MyObj(kakikiriData.vertices, kakikiriData.faces, shader_vertex_source, shader_fragment_source, kakikiriData.colors);
+    kakikiri.setup();
+
+    //lvl2
+    //TANGANkanan
+    var tangankanan2Data = quadric.Tabung(1.7, 0, -5.1, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var tangankanan2 = new MyObj(tangankanan2Data.vertices, tangankanan2Data.faces, shader_vertex_source, shader_fragment_source, tangankanan2Data.colors);
+    tangankanan2.setup();
+
+    //TANGANkiri
+    var tangankiri2Data = quadric.Tabung(-1.7, 0, -5.1, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var tangankiri2 = new MyObj(tangankiri2Data.vertices, tangankiri2Data.faces, shader_vertex_source, shader_fragment_source, tangankiri2Data.colors);
+    tangankiri2.setup();
+
+    //kaki kanan
+    var kakikanan2Data = quadric.Tabung(1.2, 0, -7.8, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kakikanan2 = new MyObj(kakikanan2Data.vertices, kakikanan2Data.faces, shader_vertex_source, shader_fragment_source, kakikanan2Data.colors);
+    kakikanan2.setup();
+
+    //kaki kiri
+    var kakikiri2Data = quadric.Tabung(-1.2, 0, -7.8, 7.5, 30, 50, 0.05, 0.05, 0.05, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var kakikiri2 = new MyObj(kakikiri2Data.vertices, kakikiri2Data.faces, shader_vertex_source, shader_fragment_source, kakikiri2Data.colors);
+    kakikiri2.setup();
+    //==========================================================================================
+
+    //telapaktangan
+    var telapakkananData = quadric.EllipticParaboloid(1.7, 0, -7, 5, 50, 0.05, 0.05, 0.1, 0, 0, 0, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var telapakkanan = new MyObj(telapakkananData.vertices, telapakkananData.faces, shader_vertex_source, shader_fragment_source, telapakkananData.colors);
+    telapakkanan.setup();
+
+    var telapakkiriData = quadric.EllipticParaboloid(-1.7, 0, -7, 5, 50, 0.05, 0.05, 0.1, 0, 0, 0, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var telapakkiri = new MyObj(telapakkiriData.vertices, telapakkiriData.faces, shader_vertex_source, shader_fragment_source, telapakkiriData.colors);
+    telapakkiri.setup();
+
+    //==========================================================================================
+    //telapak sikil
+    var telapakkakikananData = quadric.Ellipsoid(1.2, -0.4, -8.8, 2, 50, 0.3, 0.5, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var telapakkakikanan = new MyObj(telapakkakikananData.vertices, telapakkakikananData.faces, shader_vertex_source, shader_fragment_source, telapakkakikananData.colors);
+    telapakkakikanan.setup();
+
+    var telapakkakikiriData = quadric.Ellipsoid(-1.2, -0.4, -8.8, 2, 50, 0.3, 0.5, 0.2, putih); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var telapakkakikiri = new MyObj(telapakkakikiriData.vertices, telapakkakikiriData.faces, shader_vertex_source, shader_fragment_source, telapakkakikiriData.colors);
+    telapakkakikiri.setup();
+
+    //==========================================================================================
+    // Bagian Mulut
+    var lambeData = quadric.Curves(
+        [
+            [-0.25, 0, -0.1],
+            [-0.12, 0, -0.3],
+            [0.12, 0, -0.3],
+            [0.1, 0, -0.1],
+        ], // --> object
+        -0.1, // --> x
+        -1.2, // --> y
+        0.1, // --> z
+        100, // --> segment
+        0, // --> rotasi x
+        0, // --> rotasi y
+        0, // --> rotasi z
+        0.04, // --> ketebalan garis
+        putih
+    );
+    var lambe = new MyObj(lambeData.vertices, lambeData.faces, shader_vertex_source, shader_fragment_source, lambeData.colors);
+    lambe.setup();
+
+    var lambe2Data = quadric.Curves(
+        [
+            [-0.1, 0, -0.1],
+            [-0.12, 0, -0.3],
+            [0.12, 0, -0.3],
+            [0.25, 0, -0.1],
+        ], // --> object
+        0.1, // --> x
+        -1.2, // --> y
+        0.1, // --> z
+        100, // --> segment
+        0, // --> rotasi x
+        0, // --> rotasi y
+        0, // --> rotasi z
+        0.04, // --> ketebalan garis
+        putih
+    );
+    var lambe2 = new MyObj(lambe2Data.vertices, lambe2Data.faces, shader_vertex_source, shader_fragment_source, lambe2Data.colors);
+    lambe2.setup();
+    //==========================================================================================
+
+    head.child.push(anten1);
+    head.child.push(anten2);
+    head.child.push(anten3);
+    head.child.push(lambe);
+    head.child.push(lambe2);
+    head.child.push(leher);
+
+    anten1.child.push(mataTengah);
+    anten2.child.push(mataKanan);
+    anten3.child.push(mataKiri);
+    anten1.child.push(kelopakMid);
+    anten2.child.push(kelopakRight);
+    anten3.child.push(kelopakLeft);
+
+    mataTengah.child.push(pupilMid);
+    mataKanan.child.push(pupilRight);
+    mataKiri.child.push(pupilLeft);
+
+    pupilMid.child.push(hiasanMid);
+    pupilRight.child.push(hiasanRight);
+    pupilLeft.child.push(hiasanLeft);
+
+
+    badanz.child.push(head);
+    badanz.child.push(pbadan);
+    badanz.child.push(pbadan1);
+
+    // badanz.child.push(sendikanan);
+    // badanz.child.push(sendikiri);
+    // badanz.child.push(sendikananbawah);
+    // badanz.child.push(sendikiribawah);
+
+
+    sendikanan.child.push(sendikanan2);
+    sendikanan.child.push(tangankanan);
+    sendikanan.child.push(tangankanan2);
+    sendikanan.child.push(telapakkanan);
+
+    sendikiri.child.push(sendikiri2);
+    sendikiri.child.push(tangankiri);
+    sendikiri.child.push(tangankiri2);
+    sendikiri.child.push(telapakkiri);
+
+    sendikananbawah.child.push(sendikananbawah2);
+    sendikananbawah.child.push(kakikanan);
+    sendikananbawah.child.push(kakikanan2);
+    sendikananbawah.child.push(telapakkakikanan);
+
+    sendikiribawah.child.push(sendikiribawah2);
+    sendikiribawah.child.push(kakikiri);
+    sendikiribawah.child.push(kakikiri2);
+    sendikiribawah.child.push(telapakkakikiri);
 
 
 
@@ -601,7 +965,7 @@ function main() {
             keysPressed.a = false;
         } else if (keyCode === 87) { // W key
             keysPressed.s = false;
-        } else if (keyCode === 66) { // A key
+        } else if (keyCode === 65) { // A key
             keysPressed.d = false;
         }
     });
@@ -616,12 +980,11 @@ function main() {
     var cameraSpeed = 0.1; // Kecepatan pergerakan kamera
 
     var walkFront = true;
-    var alienPos = [-1 * 0.4, -0.35 * 0.4, 0.95 * 0.4];
+    var alienPos = [-1.9 * 0.4, -0.35 * 0.4, 0.5 * 0.4];
     var walkAngle = 0;
     var walkSpeed = 0.005;
     var maxWalkAngle = Math.PI / 32;
 
-    var MODEL_MATRIX;
     var time_prev = 0;
     var animate = function (time) {
         GL.viewport(0, 0, CANVAS.width, CANVAS.height);
@@ -647,6 +1010,14 @@ function main() {
         //render
         // ENVIRONMENT
         piring.render(piring.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        LIBS.setPosition(badanpesawat.MODEL_MATRIX, 30, 0, 0);
+        badanpesawat.render(badanpesawat.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        LIBS.setPosition(neptunus.MODEL_MATRIX, 40, 20, 20);
+        neptunus.render(neptunus.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        LIBS.setPosition(uranus.MODEL_MATRIX, 0, 20, 30);
+        uranus.render(uranus.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        LIBS.setPosition(mars.MODEL_MATRIX, -40, 20, 20);
+        mars.render(mars.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
         //OBJECT CHARACTER1
         //posisi awal
@@ -663,6 +1034,7 @@ function main() {
             }
         }
 
+        // OBJECT CHARACTER1
         var badanAlien = LIBS.get_I4();
         LIBS.translateZ(badanAlien, alienPos[2]);
         if (!walkFront) {
@@ -678,6 +1050,9 @@ function main() {
         var kaki1Angle = walkAngle;
         var kaki2Angle = -walkAngle;
 
+        var tangan1Angle = -walkAngle;
+        var tangan2Angle = walkAngle;
+
 
         var kakiAlien1 = LIBS.get_I4();
         // Apply rotations to kaki1 and kaki2
@@ -687,7 +1062,7 @@ function main() {
             LIBS.rotateY(kakiAlien1, Math.PI);
         }
         kaki_kanan.MODEL_MATRIX = kakiAlien1;
-        LIBS.setPosition(kaki_kanan.MODEL_MATRIX, 0, 0, 8);
+        LIBS.setPosition(kaki_kanan.MODEL_MATRIX, -6.5, 0, 5);
         kaki_kanan.render(kaki_kanan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
         var kakiAlien2 = LIBS.get_I4();
@@ -698,15 +1073,89 @@ function main() {
         }
 
         kaki_kiri.MODEL_MATRIX = kakiAlien2;
-        LIBS.setPosition(kaki_kiri.MODEL_MATRIX, 0, 0, 8);
+        LIBS.setPosition(kaki_kiri.MODEL_MATRIX, -6.5, 0, 5);
         kaki_kiri.render(kaki_kiri.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
+        var tanganAlien1 = LIBS.get_I4();
+        LIBS.rotateX(tanganAlien1, tangan1Angle);
+        LIBS.translateZ(tanganAlien1, alienPos[2]);
+        if (!walkFront) {
+            LIBS.rotateZ(tanganAlien1, Math.PI / 2);
+        }
+
+        lengan_kanan.MODEL_MATRIX = tanganAlien1;
+        LIBS.setPosition(lengan_kanan.MODEL_MATRIX, -6.5, 0, 5);
+        lengan_kanan.render(lengan_kanan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+        var tanganAlien2 = LIBS.get_I4();
+        LIBS.rotateX(tanganAlien2, tangan2Angle);
+        LIBS.translateZ(tanganAlien2, alienPos[2]);
+        if (!walkFront) {
+            LIBS.rotateZ(tanganAlien2, Math.PI / 2);
+        }
+
+        lengan_kiri.MODEL_MATRIX = tanganAlien2;
+        LIBS.setPosition(lengan_kiri.MODEL_MATRIX, -6.5, 0, 5);
+        lengan_kiri.render(lengan_kiri.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+
         badan.MODEL_MATRIX = badanAlien;
-        LIBS.setPosition(badan.MODEL_MATRIX, 0, 0, 8);
+        LIBS.setPosition(badan.MODEL_MATRIX, -6.5, 0, 5);
         badan.render(badan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
 
         // OBJECT CHARACTER2
+        var MODEL_MATRIX = LIBS.get_I4();
+        LIBS.translateZ(MODEL_MATRIX, alienPos[2]);
+        if (!walkFront) {
+            LIBS.rotateY(MODEL_MATRIX, Math.PI);
+        }
+
+        var animasiKakiKanan = LIBS.get_I4();
+        LIBS.rotateX(animasiKakiKanan, kaki1Angle);
+        LIBS.translateZ(animasiKakiKanan, alienPos[2]);
+        if (!walkFront) {
+            LIBS.rotateY(animasiKakiKanan, Math.PI);
+        }
+        sendikananbawah.MODEL_MATRIX = animasiKakiKanan;
+        LIBS.setPosition(sendikananbawah.MODEL_MATRIX, 6.5, 0, 10.5);
+        sendikananbawah.render(sendikananbawah.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+
+        var animasiKakiKiri = LIBS.get_I4();
+        LIBS.rotateX(animasiKakiKiri, kaki2Angle);
+        LIBS.translateZ(animasiKakiKiri, alienPos[2]);
+        if (!walkFront) {
+            LIBS.rotateY(animasiKakiKiri, Math.PI);
+        }
+        sendikiribawah.MODEL_MATRIX = animasiKakiKiri;
+        LIBS.setPosition(sendikiribawah.MODEL_MATRIX, 6.5, 0, 10.5);
+        sendikiribawah.render(sendikiribawah.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+        var animasiTanganKanan = LIBS.get_I4();
+        LIBS.rotateX(animasiTanganKanan, kaki2Angle);
+        LIBS.translateZ(animasiTanganKanan, alienPos[2]);
+        if (!walkFront) {
+            LIBS.rotateY(animasiTanganKanan, Math.PI);
+        }
+        sendikanan.MODEL_MATRIX = animasiTanganKanan;
+        LIBS.setPosition(sendikanan.MODEL_MATRIX, 6.5, 0, 10.5);
+        sendikanan.render(sendikanan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+        var animasiTanganKiri = LIBS.get_I4();
+        LIBS.rotateX(animasiTanganKiri, kaki1Angle);
+        LIBS.translateZ(animasiTanganKiri, alienPos[2]);
+        if (!walkFront) {
+            LIBS.rotateY(animasiTanganKiri, Math.PI);
+        }
+        sendikiri.MODEL_MATRIX = animasiTanganKiri;
+        LIBS.setPosition(sendikiri.MODEL_MATRIX, 6.5, 0, 10.5);
+        sendikiri.render(sendikiri.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+        //seluruh
+        badanz.MODEL_MATRIX = MODEL_MATRIX;
+        LIBS.setPosition(badanz.MODEL_MATRIX, 6.5, 0, 10.5);
+        badanz.render(badanz.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
 
 
