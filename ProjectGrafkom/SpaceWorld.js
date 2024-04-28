@@ -30,17 +30,17 @@ class MyObj {
     TRIANGLE_FACES = null;
     TRIANGLE_COLORS = null;
     TRIANGLE_TEXTURECOORDS = null;
-    _textureCoord = null;
-    _texture = null;
+    // _textureCoord = null;
+    // _texture = null;
 
     MODEL_MATRIX = LIBS.get_I4();
     child = [];
 
-    constructor(vertex, faces, source_shader_vertex, source_shader_fragment, colors, image) {
+    constructor(vertex, faces, source_shader_vertex, source_shader_fragment, colors) {
         this.vertex = vertex;
         this.faces = faces;
         this.colors = colors;
-        this.image = image;
+        // this.image = image;
 
         var compile_shader = function (source, type, typeString) {
             var shader = GL.createShader(type);
@@ -64,8 +64,8 @@ class MyObj {
 
         // Get attribute and uniform locations
         this._color = GL.getAttribLocation(this.SHADER_PROGRAM, "color");
-        this._texureCoord = GL.getAttribLocation(this.SHADER_PROGRAM, "textureCoord");
-        this._texture = GL.getUniformLocation(this.SHADER_PROGRAM, "texture");
+        // this._texureCoord = GL.getAttribLocation(this.SHADER_PROGRAM, "textureCoord");
+        // this._texture = GL.getUniformLocation(this.SHADER_PROGRAM, "texture");
         this._position = GL.getAttribLocation(this.SHADER_PROGRAM, "position");
         this._PMatrix = GL.getUniformLocation(this.SHADER_PROGRAM, "PMatrix"); //projection
         this._VMatrix = GL.getUniformLocation(this.SHADER_PROGRAM, "VMatrix"); //View
@@ -75,31 +75,31 @@ class MyObj {
         // Enable attribute arrays
         GL.enableVertexAttribArray(this._color);
         GL.enableVertexAttribArray(this._position);
-        GL.enableVertexAttribArray(this._texureCoord);
+        // GL.enableVertexAttribArray(this._texureCoord);
         GL.useProgram(this.SHADER_PROGRAM);
 
         // Create buffers
         this.TRIANGLE_VERTEX = GL.createBuffer();
         this.TRIANGLE_FACES = GL.createBuffer();
         this.TRIANGLE_COLORS = GL.createBuffer();
-        this.TRIANGLE_TEXTURECOORDS = GL.createBuffer();
+        // this.TRIANGLE_TEXTURECOORDS = GL.createBuffer();
 
-        // Load texture
-        this.image = new Image();
-        this.image.src = image;
-        this.image.onload = () => this.setupTexture();
+        // // Load texture
+        // this.image = new Image();
+        // this.image.src = image;
+        // this.image.onload = () => this.setupTexture();
     }
 
-    setupTexture() {
-        GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_TEXTURE_COORDS);
-        GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(this.textureCoords), GL.STATIC_DRAW);
-        GL.bindTexture(GL.TEXTURE_2D, this._texture);
-        GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, this.image);
-        GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
-        GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR_MIPMAP_NEAREST);
-        GL.generateMipmap(GL.TEXTURE_2D);
-        GL.bindTexture(GL.TEXTURE_2D, null);
-    }
+    // setupTexture() {
+    //     GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_TEXTURE_COORDS);
+    //     GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(this.textureCoords), GL.STATIC_DRAW);
+    //     GL.bindTexture(GL.TEXTURE_2D, this._texture);
+    //     GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, this.image);
+    //     GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
+    //     GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR_MIPMAP_NEAREST);
+    //     GL.generateMipmap(GL.TEXTURE_2D);
+    //     GL.bindTexture(GL.TEXTURE_2D, null);
+    // }
 
     setup() {
         GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_VERTEX);
@@ -112,8 +112,8 @@ class MyObj {
         GL.bufferData(GL.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.faces), GL.STATIC_DRAW);
 
 
-        GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_TEXTURECOORDS);
-        GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(this.textureCoords), GL.STATIC_DRAW);
+        // GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_TEXTURECOORDS);
+        // GL.bufferData(GL.ARRAY_BUFFER, new Float32Array(this.textureCoords), GL.STATIC_DRAW);
 
         this.child.forEach(obj => {
 
@@ -129,8 +129,8 @@ class MyObj {
         GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_COLORS); // Bind the color buffer
         GL.vertexAttribPointer(this._color, 3, GL.FLOAT, false, 0, 0); // Use the color buffer
 
-        GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_TEXTURECOORDS);
-        GL.vertexAttribPointer(this._textureCoord, 2, GL.FLOAT, false, 0, 0);
+        // GL.bindBuffer(GL.ARRAY_BUFFER, this.TRIANGLE_TEXTURECOORDS);
+        // GL.vertexAttribPointer(this._textureCoord, 2, GL.FLOAT, false, 0, 0);
 
         GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, this.TRIANGLE_FACES);
 
@@ -139,9 +139,9 @@ class MyObj {
         GL.uniformMatrix4fv(this._MMatrix, false, model_matrix); // Use the provided model_matrix
         GL.uniform1f(this._greyScality, 1);
 
-        GL.activeTexture(GL.TEXTURE0);
-        GL.bindTexture(GL.TEXTURE_2D, this._texture);
-        GL.uniform1i(GL.getUniformLocation(this.SHADER_PROGRAM, "uSampler"), 0);
+        // GL.activeTexture(GL.TEXTURE0);
+        // GL.bindTexture(GL.TEXTURE_2D, this._texture);
+        // GL.uniform1i(GL.getUniformLocation(this.SHADER_PROGRAM, "uSampler"), 0);
 
         GL.drawElements(GL.TRIANGLES, this.faces.length, GL.UNSIGNED_SHORT, 0);
 
@@ -151,21 +151,21 @@ class MyObj {
         });
     }
 
-    loadTexture(imageSrc) {
-        var texture = GL.createTexture();
-        var image = new Image();
-        image.onload = function () {
-            GL.bindTexture(GL.TEXTURE_2D, texture);
-            GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, image);
-            GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
-            GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR);
-            GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, GL.CLAMP_TO_EDGE);
-            GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE);
-            GL.bindTexture(GL.TEXTURE_2D, null);
-        };
-        image.src = imageSrc;
-        return texture;
-    }
+    // loadTexture(imageSrc) {
+    //     var texture = GL.createTexture();
+    //     var image = new Image();
+    //     image.onload = function () {
+    //         GL.bindTexture(GL.TEXTURE_2D, texture);
+    //         GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, image);
+    //         GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MAG_FILTER, GL.LINEAR);
+    //         GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR);
+    //         GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, GL.CLAMP_TO_EDGE);
+    //         GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE);
+    //         GL.bindTexture(GL.TEXTURE_2D, null);
+    //     };
+    //     image.src = imageSrc;
+    //     return texture;
+    // }
 }
 
 function updateViewMatrix() {
@@ -273,47 +273,47 @@ function main() {
 
 
     // Planet
-    // Bumi 
-    var bumiData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    var bumi = new MyObj(bumiData.vertices, bumiData.faces, shader_vertex_source, shader_fragment_source, bumiData.colors, 'img\Earth.png');
-    bumi.setupTexture(); // Memuat dan mengatur tekstur
-    bumi.setup(); // Menyiapkan buffer dan konfigurasi lainnya
+    // // Bumi 
+    // var bumiData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
+    // var bumi = new MyObj(bumiData.vertices, bumiData.faces, shader_vertex_source, shader_fragment_source, bumiData.colors);
+    // bumi.setupTexture(); // Memuat dan mengatur tekstur
+    // bumi.setup(); // Menyiapkan buffer dan konfigurasi lainnya
 
-    // Bulan 
-    var bulanData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    var bulan = new MyObj(bulanData.vertices, bulanData.faces, shader_vertex_source, shader_fragment_source, bulanData.colors, '');
-    bulan.setupTexture();
-    bulan.setup();
+    // // Bulan 
+    // var bulanData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
+    // var bulan = new MyObj(bulanData.vertices, bulanData.faces, shader_vertex_source, shader_fragment_source, bulanData.colors);
+    // bulan.setupTexture();
+    // bulan.setup();
 
-    // Mars 
-    var marsData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    var mars = new MyObj(marsData.vertices, marsData.faces, shader_vertex_source, shader_fragment_source, marsData.colors, 'link_gambar_bumi.jpg');
-    mars.setupTexture();
-    mars.setup();
+    // // Mars 
+    // var marsData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
+    // var mars = new MyObj(marsData.vertices, marsData.faces, shader_vertex_source, shader_fragment_source, marsData.colors, 'link_gambar_bumi.jpg');
+    // mars.setupTexture();
+    // mars.setup();
 
-    // Jupiter
-    var jupiterData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    var jupiter = new MyObj(jupiterData.vertices, jupiterData.faces, shader_vertex_source, shader_fragment_source, jupiterData.colors, 'link_gambar_bumi.jpg');
-    jupiter.setupTexture();
-    jupiter.setup();
+    // // Jupiter
+    // var jupiterData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
+    // var jupiter = new MyObj(jupiterData.vertices, jupiterData.faces, shader_vertex_source, shader_fragment_source, jupiterData.colors, 'link_gambar_bumi.jpg');
+    // jupiter.setupTexture();
+    // jupiter.setup();
 
-    // Neptunus 
-    var neptunusData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    var neptunus = new MyObj(neptunusData.vertices, neptunusData.faces, shader_vertex_source, shader_fragment_source, neptunusData.colors, 'link_gambar_bumi.jpg');
-    neptunus.setupTexture();
-    neptunus.setup();
+    // // Neptunus 
+    // var neptunusData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
+    // var neptunus = new MyObj(neptunusData.vertices, neptunusData.faces, shader_vertex_source, shader_fragment_source, neptunusData.colors, 'link_gambar_bumi.jpg');
+    // neptunus.setupTexture();
+    // neptunus.setup();
 
-    // Saturnus
-    var saturnusData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    var saturnus = new MyObj(saturnusData.vertices, saturnusData.faces, shader_vertex_source, shader_fragment_source, saturnusData.colors, 'link_gambar_bumi.jpg');
-    saturnus.setupTexture();
-    saturnus.setup();
+    // // Saturnus
+    // var saturnusData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
+    // var saturnus = new MyObj(saturnusData.vertices, saturnusData.faces, shader_vertex_source, shader_fragment_source, saturnusData.colors, 'link_gambar_bumi.jpg');
+    // saturnus.setupTexture();
+    // saturnus.setup();
 
-    // Matahari
-    var matahariData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
-    var matahari = new MyObj(matahariData.vertices, matahariData.faces, shader_vertex_source, shader_fragment_source, matahariData.colors, 'link_gambar_bumi.jpg');
-    matahari.setupTexture();
-    matahari.setup();
+    // // Matahari
+    // var matahariData = quadric.Ellipsoid(0, 0, 0.5, 0.8, 100, 0, 0, 0, 0);
+    // var matahari = new MyObj(matahariData.vertices, matahariData.faces, shader_vertex_source, shader_fragment_source, matahariData.colors, 'link_gambar_bumi.jpg');
+    // matahari.setupTexture();
+    // matahari.setup();
 
 
     //OBJECT CHARACTER 1
@@ -536,8 +536,8 @@ function main() {
             var dx = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
             var dy = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-            mouseX += dx * sensitivity;
-            mouseY += dy * sensitivity;
+            mouseX -= dx * sensitivity;
+            mouseY -= dy * sensitivity;
 
             updateViewMatrix();
         }
@@ -582,30 +582,29 @@ function main() {
 
     document.addEventListener('keydown', function (event) {
         var keyCode = event.keyCode;
-        if (keyCode === 87) { // W key
+        if (keyCode === 83) { // S key
             keysPressed.w = true;
-        } else if (keyCode === 65) { // A key
-            keysPressed.a = true;
-        } else if (keyCode === 83) { // S key
-            keysPressed.s = true;
         } else if (keyCode === 68) { // D key
+            keysPressed.a = true;
+        } else if (keyCode === 87) { // W key
+            keysPressed.s = true;
+        } else if (keyCode === 65) { // A key
             keysPressed.d = true;
         }
     });
 
     document.addEventListener('keyup', function (event) {
         var keyCode = event.keyCode;
-        if (keyCode === 87) { // W key
+        if (keyCode === 83) { // S key
             keysPressed.w = false;
-        } else if (keyCode === 65) { // A key
-            keysPressed.a = false;
-        } else if (keyCode === 83) { // S key
-            keysPressed.s = false;
         } else if (keyCode === 68) { // D key
+            keysPressed.a = false;
+        } else if (keyCode === 87) { // W key
+            keysPressed.s = false;
+        } else if (keyCode === 66) { // A key
             keysPressed.d = false;
         }
     });
-
 
     /*========================= DRAWING ========================= */
     GL.clearColor(0.0, 0.0, 0.0, 0.0);
@@ -616,10 +615,9 @@ function main() {
 
     var cameraSpeed = 0.1; // Kecepatan pergerakan kamera
 
-    var depressoMovementSpeed = 0.005; 
-    var walkFront = true; 
+    var walkFront = true;
     var alienPos = [-1 * 0.4, -0.35 * 0.4, 0.95 * 0.4];
-    var walkAngle = 0; 
+    var walkAngle = 0;
     var walkSpeed = 0.005;
     var maxWalkAngle = Math.PI / 32;
 
@@ -649,19 +647,17 @@ function main() {
         //render
         // ENVIRONMENT
         piring.render(piring.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
-        bumi.render(bumi.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
-
-        //OBJECT 1
+        //OBJECT CHARACTER1
         //posisi awal
         if (walkFront == true) {
-            alienPos[2] += alienMovementSpeed;
-            if (depressoPos[2] >= 1) {
+            alienPos[2] += walkSpeed;
+            if (alienPos[2] >= 1) {
                 walkFront = false;
             }
         }
         else {
-            alienPos[2] -= alienMovementSpeed;
+            alienPos[2] -= walkSpeed;
             if (alienPos[2] <= 0.65) {
                 walkFront = true;
             }
@@ -670,19 +666,14 @@ function main() {
         var badanAlien = LIBS.get_I4();
         LIBS.translateZ(badanAlien, alienPos[2]);
         if (!walkFront) {
-            LIBS.rotateY(badanDepresso, Math.PI);
+            LIBS.rotateY(badanAlien, Math.PI);
         }
-
 
         // Logic for walking animation
         walkAngle += walkSpeed;
-        if (walkAngle > maxWalkAngle) {
-            walkSpeed = -walkSpeed; // Reverse direction if reaching the maximum angle
-        } else if (walkAngle < -maxWalkAngle) {
-            walkSpeed = -walkSpeed; // Reverse direction if reaching the minimum angle
+        if (walkAngle > maxWalkAngle || walkAngle < -maxWalkAngle) {
+            walkSpeed = -walkSpeed; // Reverse direction if reaching the maximum or minimum angle
         }
-
-
         // Rotate kaki1 and kaki2 alternately
         var kaki1Angle = walkAngle;
         var kaki2Angle = -walkAngle;
@@ -695,9 +686,9 @@ function main() {
         if (!walkFront) {
             LIBS.rotateY(kakiAlien1, Math.PI);
         }
-        kaki1.MODEL_MATRIX = kakiAlien1;
-        // alas1.MODEL_MATRIX = MODEL_MATRIX2;
-        kaki1.render(kaki1.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        kaki_kanan.MODEL_MATRIX = kakiAlien1;
+        LIBS.setPosition(kaki_kanan.MODEL_MATRIX, 0, 0, 8);
+        kaki_kanan.render(kaki_kanan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
         var kakiAlien2 = LIBS.get_I4();
         LIBS.rotateX(kakiAlien2, kaki2Angle);
@@ -706,63 +697,16 @@ function main() {
             LIBS.rotateY(kakiAlien2, Math.PI);
         }
 
-        kaki2.MODEL_MATRIX = kakiAlien2;
-        kaki2.render(kaki2.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        kaki_kiri.MODEL_MATRIX = kakiAlien2;
+        LIBS.setPosition(kaki_kiri.MODEL_MATRIX, 0, 0, 8);
+        kaki_kiri.render(kaki_kiri.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
         badan.MODEL_MATRIX = badanAlien;
-        badan.render(badan1.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        LIBS.setPosition(badan.MODEL_MATRIX, 0, 0, 8);
+        badan.render(badan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
 
-        // // OBJECT2
-        // posisi awal
-        if (walkFront1 == true) {
-            flopiePos[2] += flopieMovementSpeed;
-            if (flopiePos[2] >= 1) {
-                walkFront1 = false;
-            }
-        }
-        else {
-            flopiePos[2] -= flopieMovementSpeed;
-            if (flopiePos[2] <= 0.65) {
-                walkFront1 = true;
-            }
-        }
-
-        badanFlopie = LIBS.get_I4();
-        LIBS.translateZ(badanFlopie, flopiePos[2]);
-
-
-        // Apply rotations to kaki1 and kaki2
-        kakiFlopie1 = LIBS.get_I4();
-        LIBS.rotateX(kakiFlopie1, kaki1Angle);
-        LIBS.translateZ(kakiFlopie1, flopiePos[2]);
-        // if (!walkFront) {
-        //     LIBS.rotateY(kakiFlopie1, Math.PI);
-        // }
-        leftfeet.MODEL_MATRIX = kakiFlopie1;
-        kakiFlopie2 = LIBS.get_I4();
-        LIBS.rotateX(kakiFlopie2, kaki2Angle);
-        LIBS.translateZ(kakiFlopie2, flopiePos[2]);
-        // if (!walkFront) {
-        //     LIBS.rotateY(kakiFlopie2, Math.PI);
-        // }
-        rightfeet.MODEL_MATRIX = kakiFlopie2;
-        // alas1.MODEL_MATRIX = MODEL_MATRIX2;
-        if (!walkFront1) {
-            LIBS.rotateY(badanFlopie, Math.PI);
-            LIBS.rotateY(kakiFlopie1, Math.PI);
-
-            LIBS.rotateY(kakiFlopie2, Math.PI);
-
-        }
-        leftfeet.render(leftfeet.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
-
-
-        rightfeet.render(rightfeet.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
-
-
-        lowerbody.MODEL_MATRIX = badanFlopie;
-        lowerbody.render(lowerbody.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        // OBJECT CHARACTER2
 
 
 
@@ -773,6 +717,5 @@ function main() {
 
     animate(0);
 }
-
 
 window.addEventListener('load', main);
