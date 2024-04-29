@@ -180,7 +180,7 @@ function main() {
         [0 / 0, 0 / 0, 0 / 0]
     ];
 
-    var gay = [
+    var rb = [
         [1.0, 0.0, 0.0],
         [0.0, 1.0, 0.0],
         [0.0, 0.0, 1.0]
@@ -281,9 +281,9 @@ function main() {
     //==============================================================================================
     
     //badan
-    var badanData = quadric.Tabung(0, 0, -3.6, 1.40, 2.3, 50, 1, 1, 1, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
-    var badan = new MyObj(badanData.vertices, badanData.faces, shader_vertex_source, shader_fragment_source, badanData.colors);
-    badan.setup();        
+    var badanzData = quadric.Tabung(0, 0, -3.6, 1.40, 2.3, 50, 1, 1, 1, 0, 0, 0, hijaumuda); // x, y, z, radius, segments, ovalScaleX, ovalScaleY, ovalScaleZ
+    var badanz = new MyObj(badanzData.vertices, badanzData.faces, shader_vertex_source, shader_fragment_source, badanzData.colors);
+    badanz.setup();        
     //==============================================================================================
     
     //sendi
@@ -458,9 +458,9 @@ function main() {
     pupilLeft.child.push(hiasanLeft);
 
 
-    badan.child.push(head);
-    badan.child.push(pbadan);
-    badan.child.push(pbadan1);
+    badanz.child.push(head);
+    badanz.child.push(pbadan);
+    badanz.child.push(pbadan1);
 
     // badan.child.push(sendikanan);
     // badan.child.push(sendikiri);
@@ -687,8 +687,8 @@ function main() {
         sendikiri.render(sendikiri.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
         //seluruh
-        badan.MODEL_MATRIX = MODEL_MATRIX;
-        badan.render(badan.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+        badanz.MODEL_MATRIX = MODEL_MATRIX;
+        badanz.render(badanz.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
     
 
 

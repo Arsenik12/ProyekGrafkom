@@ -138,7 +138,12 @@ var LIBS = {
       },
       setPosition: function(m,x,y,z){
         m[12]=x, m[13]=y, m[14]=z;
-      }
+      },
+      scale: function(m, scaleX, scaleY, scaleZ) {
+        m[0] *= scaleX;
+        m[5] *= scaleY;
+        m[10] *= scaleZ;
+    }
   };
 
 
@@ -293,21 +298,21 @@ var LIBS = {
   //       m[12]=x, m[13]=y, m[14]=z;
   //     },
 
-  //     // Fungsi Translasi
+      // Fungsi Translasi
   //     translate: function(m, x, y, z) {
   //         m[12] += x;
   //         m[13] += y;
   //         m[14] += z;
   //     },
 
-  //     // Fungsi Skalasi
-  //     scale: function(m, scaleX, scaleY, scaleZ) {
-  //         m[0] *= scaleX;
-  //         m[5] *= scaleY;
-  //         m[10] *= scaleZ;
-  //     },
+      // Fungsi Skalasi
+      // scale: function(m, scaleX, scaleY, scaleZ) {
+      //     m[0] *= scaleX;
+      //     m[5] *= scaleY;
+      //     m[10] *= scaleZ;
+      // },
 
-  //     // Fungsi Rotasi pada sumbu-sumbu X, Y, dan Z (sudah ada)
+  // //     // Fungsi Rotasi pada sumbu-sumbu X, Y, dan Z (sudah ada)
 
   //     // Fungsi Rotasi Terhadap Sumbu Aritmetika Sembarang
   //     rotateArbitraryAxis: function(m, angle, axisX, axisY, axisZ) {

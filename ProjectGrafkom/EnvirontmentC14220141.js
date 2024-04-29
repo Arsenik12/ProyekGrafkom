@@ -365,6 +365,11 @@ function main() {
     var walkSpeed = 0.010; // Speed of the walking animation
     var maxWalkAngle = Math.PI / 20;
 
+
+    var scaleFactor = 1; // Inisialisasi faktor skala
+    var scalingSpeed = 0.0005; // Kecepatan animasi scaling
+
+
     var time_prev = 0;
     var animate = function (time) {
         GL.viewport(0, 0, CANVAS.width, CANVAS.height);
@@ -387,18 +392,14 @@ function main() {
         }
 
     //draw
+    scaleFactor += scalingSpeed * dt;
+    if (scaleFactor > 2 || scaleFactor < 0) { 
+        scalingSpeed *= -1; 
+    }
 
     var MODEL_MATRIX = LIBS.get_I4();
-    badanpesawat.MODEL_MATRIX = MODEL_MATRIX;
-    badanpesawat.render(badanpesawat.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
-
-
-
-
-
-
-
-
+    LIBS.scale(MODEL_MATRIX, scaleFactor, scaleFactor, scaleFactor);
+    badanpesawat.render(MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
 
     GL.flush();

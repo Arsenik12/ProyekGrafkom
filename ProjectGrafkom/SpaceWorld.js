@@ -808,7 +808,7 @@ function main() {
         0, // --> rotasi y
         0, // --> rotasi z
         0.04, // --> ketebalan garis
-        putih
+        putih // --> warna
     );
     var lambe = new MyObj(lambeData.vertices, lambeData.faces, shader_vertex_source, shader_fragment_source, lambeData.colors);
     lambe.setup();
@@ -861,12 +861,6 @@ function main() {
     badanz.child.push(pbadan);
     badanz.child.push(pbadan1);
 
-    // badanz.child.push(sendikanan);
-    // badanz.child.push(sendikiri);
-    // badanz.child.push(sendikananbawah);
-    // badanz.child.push(sendikiribawah);
-
-
     sendikanan.child.push(sendikanan2);
     sendikanan.child.push(tangankanan);
     sendikanan.child.push(tangankanan2);
@@ -893,10 +887,10 @@ function main() {
     var PROJECTION_MATRIX = LIBS.get_projection(40, CANVAS.width / CANVAS.height, 1, 100);
     var VIEW_MATRIX = LIBS.get_I4();
 
-    // Event listener untuk mouse movement
+  
     document.addEventListener('mousemove', function (event) {
         if (isMouseDown) {
-            var sensitivity = 0.01; // Adjust sensitivity here
+            var sensitivity = 0.01; 
             var dx = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
             var dy = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
@@ -906,36 +900,28 @@ function main() {
             updateViewMatrix();
         }
     });
-    // Event listener untuk mouse down
     document.addEventListener('mousedown', function (event) {
         isMouseDown = true;
         updateViewMatrix();
     });
-    // Event listener untuk mouse up
     document.addEventListener('mouseup', function (event) {
         isMouseDown = false;
     });
     function updateViewMatrix() {
-        var sensitivity = 0.001; // Adjust sensitivity here
+        var sensitivity = 0.001; 
         var dx = mouseX - prevMouseX;
         var dy = mouseY - prevMouseY;
-        // Rotate the view matrix based on mouse movement
-        LIBS.rotateY(VIEW_MATRIX, dx);
-        LIBS.rotateX(VIEW_MATRIX, dy);
+        LIBS.rotateY(VIEW_MATRIX, -dx);
+        LIBS.rotateX(VIEW_MATRIX, -dy);
         prevMouseX = mouseX;
         prevMouseY = mouseY;
     }
 
-    // Set view matrix to position the camera
     LIBS.translateZ(VIEW_MATRIX, -5);
-    var zoomSpeed = 0.2; // Kecepatan zoom
-    // Event listener untuk scroll mouse
+    var zoomSpeed = 0.2; 
     document.addEventListener('wheel', function (event) {
-        // Menentukan arah scroll
         var delta = Math.max(-1, Math.min(1, (event.wheelDelta || -event.detail)));
-        // Mengubah posisi kamera berdasarkan arah scroll
         LIBS.translateZ(VIEW_MATRIX, delta * zoomSpeed);
-        // Memastikan kamera tidak terlalu dekat atau terlalu jauh
         if (VIEW_MATRIX[14] < -20) {
             VIEW_MATRIX[14] = -20;
         }
@@ -985,6 +971,22 @@ function main() {
     var walkSpeed = 0.005;
     var maxWalkAngle = Math.PI / 32;
 
+var scaleFactor = 1; // Faktor scaling awal
+var scaleSpeed = 0.002; // Kecepatan animasi scaling
+var maxScale = 2; // Batas maksimum faktor scaling
+var minScale = 0.5; // Batas minimum faktor scaling
+
+
+// Inisialisasi posisi awal dan tujuan pesawat
+var initialPosition = [0, 0, 0]; // Posisi awal pesawat
+var targetPosition = [50, 0, 50]; // Posisi tujuan pesawat
+var planeDirection = 1; // Arah pergerakan pesawat (1 untuk maju, -1 untuk mundur)
+
+
+
+
+
+
     var time_prev = 0;
     var animate = function (time) {
         GL.viewport(0, 0, CANVAS.width, CANVAS.height);
@@ -1009,9 +1011,11 @@ function main() {
 
         //render
         // ENVIRONMENT
+
+        // LIBS.setPosition(badanpesawat.MODEL_MATRIX, 30, 0, 0);
+        // badanpesawat.render(badanpesawat.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
         piring.render(piring.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
-        LIBS.setPosition(badanpesawat.MODEL_MATRIX, 30, 0, 0);
-        badanpesawat.render(badanpesawat.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
         LIBS.setPosition(neptunus.MODEL_MATRIX, 40, 20, 20);
         neptunus.render(neptunus.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
         LIBS.setPosition(uranus.MODEL_MATRIX, 0, 20, 30);
@@ -1041,12 +1045,12 @@ function main() {
             LIBS.rotateY(badanAlien, Math.PI);
         }
 
-        // Logic for walking animation
+        //walking 
         walkAngle += walkSpeed;
         if (walkAngle > maxWalkAngle || walkAngle < -maxWalkAngle) {
-            walkSpeed = -walkSpeed; // Reverse direction if reaching the maximum or minimum angle
+            walkSpeed = -walkSpeed;
         }
-        // Rotate kaki1 and kaki2 alternately
+        // Rotate kaki1 and kaki2
         var kaki1Angle = walkAngle;
         var kaki2Angle = -walkAngle;
 
@@ -1055,7 +1059,7 @@ function main() {
 
 
         var kakiAlien1 = LIBS.get_I4();
-        // Apply rotations to kaki1 and kaki2
+        //rotations 
         LIBS.rotateX(kakiAlien1, kaki1Angle);
         LIBS.translateZ(kakiAlien1, alienPos[2]);
         if (!walkFront) {
@@ -1121,7 +1125,6 @@ function main() {
         LIBS.setPosition(sendikananbawah.MODEL_MATRIX, 6.5, 0, 10.5);
         sendikananbawah.render(sendikananbawah.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
 
-
         var animasiKakiKiri = LIBS.get_I4();
         LIBS.rotateX(animasiKakiKiri, kaki2Angle);
         LIBS.translateZ(animasiKakiKiri, alienPos[2]);
@@ -1156,6 +1159,37 @@ function main() {
         badanz.MODEL_MATRIX = MODEL_MATRIX;
         LIBS.setPosition(badanz.MODEL_MATRIX, 6.5, 0, 10.5);
         badanz.render(badanz.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+
+scaleFactor += scaleSpeed;
+
+if (scaleFactor >= maxScale || scaleFactor <= minScale) {
+    scaleSpeed *= -1; 
+}
+
+var scaledModelMatrix = badanpesawat.MODEL_MATRIX.slice(); 
+LIBS.scale(scaledModelMatrix, scaleFactor, scaleFactor, scaleFactor);
+
+
+var speed = 0.1; 
+var step = speed * planeDirection; 
+
+LIBS.translateZ(badanpesawat.MODEL_MATRIX, step);
+
+if (
+    (planeDirection == 1 && badanpesawat.MODEL_MATRIX[14] >= targetPosition[0]) ||
+    (planeDirection == -1 && badanpesawat.MODEL_MATRIX[14] <= initialPosition[0])
+) {
+    planeDirection *= -1; 
+    LIBS.rotateY(badanpesawat.MODEL_MATRIX, Math.PI); 
+}
+
+badanpesawat.render(badanpesawat.MODEL_MATRIX, VIEW_MATRIX, PROJECTION_MATRIX);
+
+LIBS.setPosition(scaledModelMatrix, 30, 0, 0); 
+
+badanpesawat.render(scaledModelMatrix, VIEW_MATRIX, PROJECTION_MATRIX);
+
 
 
 

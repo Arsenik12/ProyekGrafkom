@@ -244,10 +244,6 @@ window.quadric = {
         var vertices = [];
         var colors = [];
     
-        var rainbowColors = [
-            [190 / 255, 215 / 255, 84 / 255] // Warna BED754
-        ];
-    
         for (var i = 0; i <= segments; i++) {
             var latAngle = Math.PI * (-0.5 + (i / segments));
             var vLat = latAngle;
